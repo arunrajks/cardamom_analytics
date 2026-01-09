@@ -134,26 +134,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
               const SizedBox(height: 12),
               _buildTrendInsight(data, l10n),
               const SizedBox(height: 24),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    data.isEmpty ? "" : 
-                    (() {
-                      final first = data.first.date;
-                      final now = DateTime.now();
-                      final yesterday = now.subtract(const Duration(days: 1));
-                      final fmt = DateFormat('yyyy-MM-dd');
-                      if (fmt.format(first) == fmt.format(now)) return l10n.today;
-                      if (fmt.format(first) == fmt.format(yesterday)) return l10n.yesterday;
-                      return DateFormat('MMMM d', l10n.locale.languageCode).format(first);
-                    })(),
-                    style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -395,6 +376,11 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
+                    Text(
+                      DateFormat('dd MMM yyyy', l10n.locale.languageCode).format(auction.date),
+                      style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey.shade500),
+                    ),
+                    const SizedBox(height: 4),
                     Row(
                       children: [
                         Text("${NumberFormat("#,##0").format(auction.quantity)} kg", style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),

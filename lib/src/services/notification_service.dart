@@ -57,7 +57,8 @@ class NotificationService {
   /// Show a notification for new auction data
   Future<void> showNewAuctionNotification({
     required String auctioneer,
-    required double price,
+    required double avgPrice,
+    required double maxPrice,
     required DateTime date,
   }) async {
     if (!_initialized) {
@@ -71,6 +72,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      styleInformation: BigTextStyleInformation(''), // Enable multi-line support
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -86,8 +88,8 @@ class NotificationService {
 
     await _notifications.show(
       0, // Notification ID
-      'New Cardamom Auction! 🌿',
-      '$auctioneer: ₹${price.toStringAsFixed(0)}',
+      'Cardamom price update: ₹${avgPrice.toStringAsFixed(2)} Avg - See today\'s auction highs!',
+      'Auctioneer: $auctioneer\nAvg Price: ₹${avgPrice.toStringAsFixed(2)}\nMax Price: ₹${maxPrice.toStringAsFixed(2)}',
       details,
       payload: 'auction_${date.toIso8601String()}',
     );

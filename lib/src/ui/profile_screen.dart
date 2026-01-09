@@ -187,9 +187,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, IconData icon) {
+  Widget _buildTextField(TextEditingController controller, IconData icon, {TextInputType? keyboardType}) {
     return TextFormField(
       controller: controller,
+      keyboardType: keyboardType,
       style: GoogleFonts.outfit(),
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: ThemeConstants.forestGreen),

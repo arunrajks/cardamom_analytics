@@ -20,6 +20,19 @@ class AppLocalizations {
       'latest_auctions': 'Latest Auctions',
       'avg_price': 'Avg Price',
       'qty_sold': 'Qty Sold',
+      'volatility_help_title': '30-Day Volatility',
+      'volatility_help_desc': 'Measures how much prices have fluctuated in the last month. High volatility (>3%) indicates unpredictable prices and higher risk.',
+      'stability_help_title': 'Stability Level',
+      'stability_help_desc': 'Shows the typical expected price movement (standard deviation). A lower value means prices are more predictable.',
+      'typical_price_help_title': 'Typical Price (Median)',
+      'typical_price_help_desc': 'The middle value of prices from the last 3 seasons. It is more representative of common prices than a simple average.',
+      'normal_range_help_title': 'Normal Range',
+      'normal_range_help_desc': 'The price range where the majority of auctions fell during the last 3 seasons.',
+      'highest_seen_help_title': 'Highest Seen',
+      'highest_seen_help_desc': 'The absolute highest price recorded in our dataset. These are rare occurrences.',
+      'lowest_seen_help_title': 'Lowest Seen',
+      'lowest_seen_help_desc': 'The absolute lowest price recorded in our dataset.',
+      'got_it': 'Got it',
       'total_qty': 'Total Qty',
       'market_insights': 'Market Insights',
       'price_trend': 'Price Trend',
@@ -170,6 +183,25 @@ class AppLocalizations {
       'email': 'Email Address',
       'phone_number': 'Phone Number',
       'profile_privacy_note': 'Your details are stored locally on this device.',
+      'initial_sync_pending': 'Fetching today\'s latest records...',
+      'initial_sync_hint': 'You are currently seeing historical data. Please wait or press refresh for today\'s live prices.',
+      'short_term': 'Short-term',
+      'long_term': 'Long-term',
+      'exceptional_years': 'Exceptional years only',
+      'market_risk_stability': 'Market Risk & Stability',
+      'confidence_high': 'Confidence: High',
+      'confidence_medium': 'Confidence: Medium',
+      'confidence_low': 'Confidence: Low',
+      'why_label': 'Why',
+      'decision_summary': 'Decision Summary:',
+      'sell': 'Sell',
+      'hold': 'Hold',
+      'wait_label': 'Wait',
+      'yes': 'YES',
+      'no': 'NO',
+      'risk': 'Risk',
+      'typical_movement': 'Typical movement:',
+      'price_moves_context': 'Price moves ± {value} from typical price',
     },
     'ml': {
       'app_title': 'ഏലക്കായ അനലിറ്റിക്സ്',
@@ -181,6 +213,19 @@ class AppLocalizations {
       'avg_price': 'ശരാശരി വില',
       'qty_sold': 'വിൽപ്പന അളവ്',
       'total_qty': 'ആകെ അളവ്',
+      'volatility_help_title': '30-ദിവസത്തെ ഉത്കണ്ഠ (Volatility)',
+      'volatility_help_desc': 'കഴിഞ്ഞ മാസത്തെ വിലവർദ്ധനവിലെ മാറ്റങ്ങളെ ഇത് കാണിക്കുന്നു. ഉയർന്ന ശതമാനം (>3%) വിലയിൽ വലിയ മാറ്റങ്ങൾ ഉണ്ടാകാമെന്ന് സൂചിപ്പിക്കുന്നു.',
+      'stability_help_title': 'സ്ഥിരതയുടെ അളവ് (Stability)',
+      'stability_help_desc': 'വിലയിൽ വരാവുന്ന സാധാരണ മാറ്റങ്ങളെ ഇത് കാണിക്കുന്നു. കുറഞ്ഞ മൂല്യം എന്നാൽ വില കൂടുതൽ സ്ഥിരതയുള്ളതാണെന്ന് അർത്ഥമാക്കുന്നു.',
+      'typical_price_help_title': 'സാധാരണ വില (മീഡിയൻ)',
+      'typical_price_help_desc': 'കഴിഞ്ഞ 3 കാലങ്ങളിലെ വിലകളുടെ മധ്യത്തിലുള്ള വിലയാണിത്. വെറും ശരാശരിയേക്കാൾ കൃത്യമായ ചിത്രം ഇത് നൽകുന്നു.',
+      'normal_range_help_title': 'സാധാരണ വിലയുടെ പരിധി',
+      'normal_range_help_desc': 'കഴിഞ്ഞ 3 കാലങ്ങളിൽ മിക്കപ്പോഴും വിലകൾ നിന്നിരുന്ന പരിധിയാണിത്.',
+      'highest_seen_help_title': 'ഏറ്റവും കൂടിയ വില',
+      'highest_seen_help_desc': 'ചരിത്രപരമായ രേഖകളിൽ കാണപ്പെട്ട ഏറ്റവും ഉയർന്ന വിലയാണിത്. ഇത് അപൂർവ്വമായി മാത്രം സംഭവിക്കുന്നതാണ്.',
+      'lowest_seen_help_title': 'ഏറ്റവും കുറഞ്ഞ വില',
+      'lowest_seen_help_desc': 'ചരിത്രപരമായ രേഖകളിൽ കാണപ്പെട്ട ഏറ്റവും കുറഞ്ഞ വിലയാണിത്.',
+      'got_it': 'ശരി',
       'market_insights': 'വിപണി വിശകലനം',
       'price_trend': 'വില വ്യതിയാനം',
       'price_performance': 'വില പ്രകടനം',
@@ -293,7 +338,7 @@ class AppLocalizations {
       'key_statistics': 'പ്രധാന വിവരങ്ങൾ',
       'price_level_title': 'വില നിലവാരം',
       'historical_label': 'ചരിത്രപരം',
-      'typical_price_label': 'സാധാരണ വില (Median)',
+      'typical_price_label': 'സാധാരണ വില (മീഡിയൻ)',
       'normal_range_label': 'സാധാരണ പരിധി',
       'highest_lowest_title': 'കൂടിയതും കുറഞ്ഞതും',
       'ten_years_label': 'ചരിത്രപരം',
@@ -330,6 +375,25 @@ class AppLocalizations {
       'email': 'ഇമെയിൽ വിലാസം',
       'phone_number': 'ഫോൺ നമ്പർ',
       'profile_privacy_note': 'നിങ്ങളുടെ വിവരങ്ങൾ ഈ ഉപകരണത്തിൽ മാത്രമാണ് സൂക്ഷിക്കുന്നത്.',
+      'initial_sync_pending': 'ഇന്നത്തെ പുതിയ വിവരങ്ങൾ ശേഖരിക്കുന്നു...',
+      'initial_sync_hint': 'നിങ്ങൾ ഇപ്പോൾ കാണുന്നത് പഴയ വിവരങ്ങളാണ്. പുതിയ വിവരങ്ങൾക്കായി അല്പസമയം കാത്തിരിക്കുകയോ റിഫ്രഷ് ബട്ടൺ അമർത്തുകയോ ചെയ്യുക.',
+      'short_term': 'ഹ്രസ്വകാല',
+      'long_term': 'ദീർഘകാല',
+      'exceptional_years': 'അസാധാരണ വർഷങ്ങൾ മാത്രം',
+      'market_risk_stability': 'വിപണി സാദ്ധ്യതയും സ്ഥിരതയും',
+      'confidence_high': 'വിശ്വാസ്യത: വളരെ കൂടുതൽ',
+      'confidence_medium': 'വിശ്വാസ്യത: ഇടത്തരം',
+      'confidence_low': 'വിശ്വാസ്യത: കുറവ്',
+      'why_label': 'എന്തുകൊണ്ട്',
+      'decision_summary': 'തീരുമാന സംഗ്രഹം:',
+      'sell': 'വില്ക്കുക',
+      'hold': 'കാത്തിരിക്കുക',
+      'wait_label': 'കാത്തിരിക്കുക',
+      'yes': 'വേണം',
+      'no': 'വേണ്ട',
+      'risk': 'സാദ്ധ്യത',
+      'typical_movement': 'സാധാരണ വ്യതിയാനം:',
+      'price_moves_context': 'സാധാരണ വിലയിൽ നിന്ന് ± {value} മാറ്റം വരാം',
     },
     'ta': {
       'app_title': 'ஏலக்காய் பகுப்பாய்வு',
@@ -340,6 +404,19 @@ class AppLocalizations {
       'latest_auctions': 'சமீபத்திய ஏலம்',
       'avg_price': 'சராசரி விலை',
       'qty_sold': 'விற்பனை அளவு',
+      'volatility_help_title': '30-நாள் ஏற்ற இறக்கம் (Volatility)',
+      'volatility_help_desc': 'கடந்த ஒரு மாதத்தில் விலை எவ்வளவு மாறியுள்ளது என்பதை இது காட்டுகிறது. அதிக ஏற்ற இறக்கம் (>3%) இருந்தால் விலை கணிக்க இயலாது என்று அர்த்தம்.',
+      'stability_help_title': 'நிலைப்புத்தன்மை (Stability)',
+      'stability_help_desc': 'விலையில் வரக்கூடிய சாதாரண மாற்றங்களை இது காட்டுகிறது. குறைந்த மதிப்பு என்றால் விலை நிலையாக இருக்கிறது என்று அர்த்தம்.',
+      'typical_price_help_title': 'சாதாரண விலை (மீடியன்)',
+      'typical_price_help_desc': 'கடந்த 3 பருவங்களின் விலைகளில் நடுப்பகுதி விலையாகும். சராசரி விலையை விட இது துல்லியமானது.',
+      'normal_range_help_title': 'சாதாரண விலை வரம்பு',
+      'normal_range_help_desc': 'கடந்த 3 பருவங்களில் பெரும்பாலான ஏலங்கள் நடத்தப்பட்ட விலை வரம்பாகும்.',
+      'highest_seen_help_title': 'அதிகபட்ச விலை',
+      'highest_seen_help_desc': 'பதிவு செய்யப்பட்ட ஏலங்களில் இதெ ஒரு மிக உயர்ந்த விலையாகும். இது அரிதாகவே நிகழும்.',
+      'lowest_seen_help_title': 'குறைந்தபட்ச விலை',
+      'lowest_seen_help_desc': 'பதிவு செய்யப்பட்ட ஏலங்களில் இதுவே மிகக் குறைந்த விலையாகும்.',
+      'got_it': 'சரி',
       'total_qty': 'மொத்த அளவு',
       'market_insights': 'சந்தை நுண்ணறிவு',
       'price_trend': 'விலை போக்கு',
@@ -453,7 +530,7 @@ class AppLocalizations {
       'key_statistics': 'முக்கிய புள்ளிவிவரங்கள்',
       'price_level_title': 'விலை நிலை',
       'historical_label': 'வரலாற்று',
-      'typical_price_label': 'சாதாரண விலை (Median)',
+      'typical_price_label': 'சாதாரண விலை (மீடியன்)',
       'normal_range_label': 'சாதாரண வரம்பு',
       'highest_lowest_title': 'அதிகபட்சம் மற்றும் குறைந்தபட்சம்',
       'ten_years_label': 'வரலாற்று',
@@ -490,6 +567,25 @@ class AppLocalizations {
       'email': 'மின்னஞ்சல் முகவரி',
       'phone_number': 'தொலைபேசி எண்',
       'profile_privacy_note': 'உங்கள் விவரங்கள் இந்த சாதனத்தில் மட்டுமே சேமிக்கப்படும்.',
+      'initial_sync_pending': 'இன்றைய சமீபத்திய பதிவுகளை சேகரிக்கிறது...',
+      'initial_sync_hint': 'நீங்கள் தற்போது வரலாற்றுத் தரவைப் பார்க்கிறீர்கள். இன்றைய நேரடி விலைகளைப் பெற காத்திருக்கவும் அல்லது புதுப்பிக்கவும்.',
+      'short_term': 'குறுகிய கால',
+      'long_term': 'நீண்ட கால',
+      'exceptional_years': 'விதிவிலக்கான ஆண்டுகள் மட்டுமே',
+      'market_risk_stability': 'சந்தை அபாயம் மற்றும் நிலைப்புத்தன்மை',
+      'confidence_high': 'நம்பிக்கை: மிக அதிகம்',
+      'confidence_medium': 'நம்பிக்கை: மிதமான',
+      'confidence_low': 'நம்பிக்கை: குறைவு',
+      'why_label': 'ஏன்',
+      'decision_summary': 'முடிவு சுருக்கம்:',
+      'sell': 'விற்க',
+      'hold': 'காத்திருக்க',
+      'wait_label': 'காத்திருக்க',
+      'yes': 'ஆம்',
+      'no': 'இல்லை',
+      'risk': 'அபாயம்',
+      'typical_movement': 'சாதாரண விலை மாற்றம்:',
+      'price_moves_context': 'சாதாரண விலையிலிருந்து ± {value} மாற்றம் வரும்',
     },
   };
 
@@ -636,6 +732,39 @@ class AppLocalizations {
   String get exportData => translate('export_data');
   String get exportSuccess => translate('export_success');
   String get selectLanguage => translate('select_language');
+  String get initialSyncPending => translate('initial_sync_pending');
+  String get initialSyncHint => translate('initial_sync_hint');
+  String get shortTerm => translate('short_term');
+  String get longTerm => translate('long_term');
+  String get exceptionalYears => translate('exceptional_years');
+  String get marketRiskStability => translate('market_risk_stability');
+  String get confidenceHigh => translate('confidence_high');
+  String get confidenceMedium => translate('confidence_medium');
+  String get confidenceLow => translate('confidence_low');
+  String get whyLabel => translate('why_label');
+  String get decisionSummary => translate('decision_summary');
+  String get sell => translate('sell');
+  String get hold => translate('hold');
+  String get waitLabel => translate('wait_label');
+  String get yes => translate('yes');
+  String get no => translate('no');
+  String get riskLabel => translate('risk');
+  String get typicalMovement => translate('typical_movement');
+  String priceMovesContext(String value) => translate('price_moves_context').replaceAll('{value}', value);
+
+  String get volatilityHelpTitle => translate('volatility_help_title');
+  String get volatilityHelpDesc => translate('volatility_help_desc');
+  String get stabilityHelpTitle => translate('stability_help_title');
+  String get stabilityHelpDesc => translate('stability_help_desc');
+  String get typicalPriceHelpTitle => translate('typical_price_help_title');
+  String get typicalPriceHelpDesc => translate('typical_price_help_desc');
+  String get normalRangeHelpTitle => translate('normal_range_help_title');
+  String get normalRangeHelpDesc => translate('normal_range_help_desc');
+  String get highestSeenHelpTitle => translate('highest_seen_help_title');
+  String get highestSeenHelpDesc => translate('highest_seen_help_desc');
+  String get lowestSeenHelpTitle => translate('lowest_seen_help_title');
+  String get lowestSeenHelpDesc => translate('lowest_seen_help_desc');
+  String get gotIt => translate('got_it');
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

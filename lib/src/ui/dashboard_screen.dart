@@ -44,7 +44,7 @@ class DashboardScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 10),
-                        _buildPriceOverview(context, prices, insights, l10n),
+                        _buildPriceOverview(context, prices, insights, l10n, ref),
                         const SizedBox(height: 24),
                         _buildTrendSection(context, ref, prices, l10n),
                         const SizedBox(height: 24),
@@ -211,17 +211,53 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPriceOverview(BuildContext context, List<AuctionData> prices, MarketInsights insights, AppLocalizations l10n) {
+  Widget _buildPriceOverview(BuildContext context, List<AuctionData> prices, MarketInsights insights, AppLocalizations l10n, WidgetRef ref) {
     if (prices.isEmpty) return const SizedBox.shrink();
+
+    final lastSyncAsnyc = ref.watch(lastSyncTimeProvider);
+    final hasNeverSynced = lastSyncAsnyc.value == null && !lastSyncAsnyc.isLoading;
 
     final latestDate = prices.first.date;
     final latestAuctions = prices.where((p) =>
         p.date.year == latestDate.year &&
         p.date.month == latestDate.month &&
         p.date.day == latestDate.day).toList();
+        
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (hasNeverSynced)
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.blue.shade100),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.blue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.initialSyncPending,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blue),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        l10n.initialSyncHint,
+                        style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -246,6 +282,8 @@ class DashboardScreen extends ConsumerWidget {
                 final ref = ProviderScope.containerOf(context);
                 await ref.read(syncServiceProvider).syncNewData(maxPages: 5);
                 ref.invalidate(historicalFullPricesProvider);
+                // Also update lastSyncTime provider
+                ref.invalidate(lastSyncTimeProvider);
                 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

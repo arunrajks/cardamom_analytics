@@ -44,6 +44,12 @@ PriceAnalyticsService priceAnalyticsService(Ref ref) {
 }
 
 @riverpod
+Future<DateTime?> lastSyncTime(Ref ref) async {
+  final sync = ref.watch(syncServiceProvider);
+  return sync.getLastSyncTime();
+}
+
+@riverpod
 Future<List<AuctionData>> historicalFullPrices(Ref ref) async {
   final db = ref.watch(databaseHelperProvider);
   final localData = await db.getByDateRange(); // No range = All data
@@ -53,11 +59,13 @@ Future<List<AuctionData>> historicalFullPrices(Ref ref) async {
   final sync = ref.read(syncServiceProvider);
   
   // ignore: discarded_futures
-  sync.syncNewData(maxPages: 5).then((count) {
+  sync.syncNewData(maxPages: 3).then((count) {
     if (count > 0) {
       debugPrint("Startup sync found $count new records. Refreshing Dashboard.");
       ref.invalidateSelf();
     }
+    // Always invalidate lastSyncTime to update the UI message
+    ref.invalidate(lastSyncTimeProvider);
   }).catchError((e) {
     debugPrint("Startup sync failed: $e");
   });

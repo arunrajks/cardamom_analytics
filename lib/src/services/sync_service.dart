@@ -13,17 +13,21 @@ class SyncService {
 
   SyncService(this._dbHelper, this._apiService);
 
-  Future<int> syncNewData({int maxPages = 20}) async {
+  Future<int> syncNewData({int maxPages = 20, bool forceDeep = false}) async {
     try {
       int totalNewRecords = 0;
       
-      // 1. Get all existing auction keys to identify duplicates accurately
-      // Key format: "YYYY-MM-DD_AUCTIONEER"
+      // 1. Get existing keys
       final existingKeys = await _dbHelper.getAllAuctionKeys();
 
-      // 2. Fetch Latest Auctions first (from main daily-price.html)
+      // 2. Fetch Latest Auctions first
       debugPrint("Syncing latest auctions...");
       final latestAuctions = await _apiService.fetchLatestAuctions();
+      
+      if (latestAuctions.isEmpty) {
+        debugPrint("No results from latest auctions page.");
+      }
+
       final newLatest = latestAuctions.where((r) {
         final key = "${AppDates.db.format(r.date)}_${r.auctioneer.toUpperCase()}";
         return !existingKeys.contains(key);
@@ -35,9 +39,15 @@ class SyncService {
         for (var r in newLatest) {
           existingKeys.add("${AppDates.db.format(r.date)}_${r.auctioneer.toUpperCase()}");
         }
+      } else if (!forceDeep && latestAuctions.isNotEmpty) {
+        // OPTIMIZATION: If we have the latest auctions and NONE of them are new, 
+        // we are likely up to date. Stop here unless a deep sync is forced.
+        debugPrint("Latest auctions already in database. Skipping archive crawl.");
+        await _updateLastSyncTime();
+        return 0;
       }
 
-      // 3. Backward Crawl Archives: Start from Page 1 and move backwards
+      // 3. Backward Crawl Archives
       for (int page = 1; page <= maxPages; page++) {
         debugPrint("Syncing archive page $page...");
         final List<AuctionData> pageRecords = await _apiService.fetchAuctionsByPage(page);
@@ -47,7 +57,6 @@ class SyncService {
           break;
         }
 
-        // Filter for records not in DB using composite key
         final newOnThisPage = pageRecords.where((r) {
           final key = "${AppDates.db.format(r.date)}_${r.auctioneer.toUpperCase()}";
           return !existingKeys.contains(key);
@@ -61,18 +70,18 @@ class SyncService {
            }
         }
 
-        // If we found a page where EVERYTHING is already in the DB, 
-        // we likely reached the end of the "gap" or new data.
-        bool allExist = pageRecords.every((r) {
-          final key = "${AppDates.db.format(r.date)}_${r.auctioneer}";
-          return existingKeys.contains(key);
-        });
-        if (allExist && page > 2) { // Allow some overlap in first few pages
-           debugPrint("All records on archive page $page already exist. Stopping sync.");
+        // If EVERYTHING on this page already exists, we hit the steady state.
+        bool allExist = pageRecords.isNotEmpty && newOnThisPage.isEmpty;
+        
+        if (allExist && !forceDeep) {
+           debugPrint("Reached already synced data on page $page. Stopping.");
            break;
         }
         
-        await Future.delayed(const Duration(milliseconds: 600));
+        // Short delay only if we are continuing to deeper pages
+        if (page < maxPages) {
+          await Future.delayed(Duration(milliseconds: page < 3 ? 100 : 500));
+        }
       }
 
       await _updateLastSyncTime();

@@ -22,6 +22,9 @@ class MarketInsights {
   final double recentNormalRangeMin;
   final double recentNormalRangeMax;
   final double recentMedian;
+  final String confidenceLevel; // 'low', 'medium', 'high'
+  final DateTime? firstDataDate;
+  final DateTime? lastDataDate;
 
   MarketInsights({
     required this.season,
@@ -44,6 +47,9 @@ class MarketInsights {
     required this.recentNormalRangeMin,
     required this.recentNormalRangeMax,
     required this.recentMedian,
+    required this.confidenceLevel,
+    this.firstDataDate,
+    this.lastDataDate,
   });
 }
 
@@ -218,6 +224,7 @@ class PriceAnalyticsService {
         recentNormalRangeMin: 0.0,
         recentNormalRangeMax: 0.0,
         recentMedian: 0.0,
+        confidenceLevel: 'low',
       );
     }
 
@@ -355,6 +362,8 @@ class PriceAnalyticsService {
     final double recentNormalRangeMin = recentMean - (0.5 * recentStdDev);
     final double recentNormalRangeMax = recentMean + (0.5 * recentStdDev);
 
+    final int dataYearCount = ((data.first.date.difference(data.last.date).inDays).abs() / 365.25).ceil();
+
     return MarketInsights(
       season: getSeasonLabel(latest.date),
       status: status,
@@ -372,10 +381,13 @@ class PriceAnalyticsService {
       normalRangeMax: longTermAvg + (0.5 * (stats['stdDev'] ?? 0.0)),
       spreadLevel: volatility > 2.5 ? 'very_wide' : (volatility > 1.2 ? 'moderate' : 'narrow'),
       spreadMessage: risk['message'] as String,
-      dataYearCount: ((data.first.date.difference(data.last.date).inDays).abs() / 365.25).ceil(),
+      dataYearCount: dataYearCount,
       recentNormalRangeMin: recentNormalRangeMin,
       recentNormalRangeMax: recentNormalRangeMax,
       recentMedian: recentMedian,
+      confidenceLevel: dataYearCount > 7 ? 'high' : (dataYearCount > 3 ? 'medium' : 'low'),
+      firstDataDate: data.last.date,
+      lastDataDate: data.first.date,
     );
   }
 }

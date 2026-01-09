@@ -63,7 +63,8 @@ void callbackDispatcher() {
         // 5. Trigger notification
         await notificationService.showNewAuctionNotification(
           auctioneer: latestAuction.auctioneer,
-          price: latestAuction.avgPrice,
+          avgPrice: latestAuction.avgPrice,
+          maxPrice: latestAuction.maxPrice,
           date: latestAuction.date,
         );
 

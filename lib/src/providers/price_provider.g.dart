@@ -78,7 +78,7 @@ final dataSeederServiceProvider =
 // ignore: unused_element
 typedef DataSeederServiceRef = AutoDisposeProviderRef<DataSeederService>;
 String _$priceAnalyticsServiceHash() =>
-    r'e79dc74c77117009184f80ca9e6527e90d8778dc';
+    r'a8a3766d42b17a6028f2ddc0f4c8dce53398050c';
 
 /// See also [priceAnalyticsService].
 @ProviderFor(priceAnalyticsService)
@@ -97,8 +97,25 @@ final priceAnalyticsServiceProvider =
 // ignore: unused_element
 typedef PriceAnalyticsServiceRef =
     AutoDisposeProviderRef<PriceAnalyticsService>;
+String _$lastSyncTimeHash() => r'065ebdf750d2307b1c3b041a7e52dfa746ff3db8';
+
+/// See also [lastSyncTime].
+@ProviderFor(lastSyncTime)
+final lastSyncTimeProvider = AutoDisposeFutureProvider<DateTime?>.internal(
+  lastSyncTime,
+  name: r'lastSyncTimeProvider',
+  debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+      ? null
+      : _$lastSyncTimeHash,
+  dependencies: null,
+  allTransitiveDependencies: null,
+);
+
+@Deprecated('Will be removed in 3.0. Use Ref instead')
+// ignore: unused_element
+typedef LastSyncTimeRef = AutoDisposeFutureProviderRef<DateTime?>;
 String _$historicalFullPricesHash() =>
-    r'4cbc4d1801994c8c6a63e72d5a45358df172c430';
+    r'4bf1752afec9a4068f4539bf8d22b6e751a9aa38';
 
 /// See also [historicalFullPrices].
 @ProviderFor(historicalFullPrices)
@@ -117,7 +134,7 @@ final historicalFullPricesProvider =
 // ignore: unused_element
 typedef HistoricalFullPricesRef =
     AutoDisposeFutureProviderRef<List<AuctionData>>;
-String _$dailyPricesHash() => r'75ed0e75b99135da9773af5a1e9607f887f4380d';
+String _$dailyPricesHash() => r'10bc05b4cb97d8e9362d4cb3a9ab8714ed33ebf2';
 
 /// See also [dailyPrices].
 @ProviderFor(dailyPrices)
@@ -135,7 +152,7 @@ final dailyPricesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DailyPricesRef = AutoDisposeFutureProviderRef<List<AuctionData>>;
-String _$historicalPricesHash() => r'75c019c3d7fe06bffa011f151f7745503ab19ee6';
+String _$historicalPricesHash() => r'5a6c05ed3c1c97158089c9f5fbf19a2ae8d721f2';
 
 /// Copied from Dart SDK
 class _SystemHash {
