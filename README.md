@@ -1,16 +1,15 @@
-# elam_price_tracker
+# Cardamom Analytics
+A comprehensive Flutter application for tracking cardamom auction prices in real-time. Cardamom Analytics provides traders, growers, and analysts with live market data scraped directly from the Spices Board of India, coupled with deep historical analysis and professional visualizations.
 
-A new Flutter project.
+### 🚀 Key Features
+- 📊 **Real-time Market Data**: Automated syncing with official Spices Board daily auction reports.
+- 📈 **Advanced Analytics**: Interactive charts and trend analysis for price fluctuations and arrival quantities.
+- 📂 **Historical Archive**: Access to years of cardamom price data with searchable and paginated records.
+- 🔔 **Smart Notifications**: Background sync alerts you as soon as new auction results are published.
+- 🌐 **Multilingual Support**: Fully localized in English, Malayalam (മലയാളം), and Tamil (தமிழ்).
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 🛠 Tech Stack
+- **Framework**: Flutter (Dart)
+- **State Management**: Riverpod
+- **Local Database**: SQLite (`sqflite`)
+- **Visuals**: `fl_chart` & Google Fonts
