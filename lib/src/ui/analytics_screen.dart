@@ -23,7 +23,7 @@ class AnalyticsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           l10n.analytics,
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: ThemeConstants.headingOrange),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: ThemeConstants.textDark),
         ),
         backgroundColor: ThemeConstants.creamApp,
         elevation: 0,
@@ -237,7 +237,7 @@ class AnalyticsScreen extends ConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: ThemeConstants.accentGold, size: 18),
+        Icon(icon, color: Colors.white70, size: 18),
         const SizedBox(width: 8),
         Expanded(
           child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
@@ -256,7 +256,7 @@ class AnalyticsScreen extends ConsumerWidget {
       children: [
         Text(
           l10n.marketRiskStability,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
         ),
         const SizedBox(height: 16),
         Container(
@@ -308,7 +308,7 @@ class AnalyticsScreen extends ConsumerWidget {
                       l10n.volatilityHelpTitle, 
                       l10n.volatilityHelpDesc, 
                       l10n,
-                      valueColor: insights.thirtyDayChange > 0 ? Colors.green : (insights.thirtyDayChange < 0 ? Colors.red : ThemeConstants.textDark),
+                      valueColor: insights.thirtyDayChange > 0 ? ThemeConstants.secondaryGreen : (insights.thirtyDayChange < 0 ? ThemeConstants.alertRed : ThemeConstants.textDark),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -367,7 +367,7 @@ class AnalyticsScreen extends ConsumerWidget {
       children: [
         Text(
           l10n.proTips,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
         ),
         const SizedBox(height: 16),
         Container(
@@ -433,7 +433,7 @@ class AnalyticsScreen extends ConsumerWidget {
           children: [
             Text(
               l10n.keyStatistics,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
             ),
           ],
         ),
@@ -531,7 +531,7 @@ class AnalyticsScreen extends ConsumerWidget {
                     ),
                     if (helpTitle != null) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.info_outline, size: 12, color: Colors.grey),
+                      const Icon(Icons.info_outline, size: 12, color: ThemeConstants.neutralGrey),
                     ],
                   ],
                 ),
@@ -638,14 +638,14 @@ class AnalyticsScreen extends ConsumerWidget {
                   LineChartBarData(
                     spots: data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.value)).toList(),
                     isCurved: true,
-                    color: Colors.blue.shade700,
+                    color: ThemeConstants.secondaryGreen,
                     barWidth: 3,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
                         radius: 4,
-                        color: Colors.blue.shade700,
+                        color: ThemeConstants.secondaryGreen,
                         strokeWidth: 2,
                         strokeColor: Colors.white,
                       ),
@@ -654,8 +654,8 @@ class AnalyticsScreen extends ConsumerWidget {
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          Colors.blue.shade700.withValues(alpha: 0.15),
-                          Colors.blue.shade700.withValues(alpha: 0.0),
+                          ThemeConstants.secondaryGreen.withValues(alpha: 0.15),
+                          ThemeConstants.secondaryGreen.withValues(alpha: 0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -697,7 +697,7 @@ class AnalyticsScreen extends ConsumerWidget {
               width: 10,
               height: 10,
               decoration: BoxDecoration(
-                color: Colors.blue.shade700.withValues(alpha: 0.6),
+                color: ThemeConstants.secondaryGreen.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
               ),
             ),
@@ -732,7 +732,7 @@ class AnalyticsScreen extends ConsumerWidget {
                   Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                   if (helpTitle != null) ...[
                     const SizedBox(width: 4),
-                    const Icon(Icons.info_outline, size: 12, color: Colors.grey),
+                    const Icon(Icons.info_outline, size: 12, color: ThemeConstants.neutralGrey),
                   ],
                 ],
               ),
@@ -799,7 +799,7 @@ class AnalyticsScreen extends ConsumerWidget {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9F6F0),
+            color: ThemeConstants.softGreen,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Column(
@@ -807,18 +807,18 @@ class AnalyticsScreen extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.info_outline, size: 20, color: Colors.grey),
+                  const Icon(Icons.info_outline, size: 20, color: ThemeConstants.neutralGrey),
                   const SizedBox(width: 12),
                   Text(
                     l10n.confidenceNote,
-                    style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14, color: Colors.grey),
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 14, color: ThemeConstants.neutralGrey),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
               Text(
                 l10n.disclaimerText,
-                style: const TextStyle(fontSize: 13, color: Colors.blueGrey, height: 1.5),
+                style: const TextStyle(fontSize: 13, color: ThemeConstants.textDark, height: 1.5),
               ),
               if (insights.firstDataDate != null && insights.lastDataDate != null) ...[
                 const SizedBox(height: 12),

@@ -14,6 +14,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
+enum HistoricalPlotType { avgPrice, maxPrice, quantity }
+
 class HistoricalDataScreen extends ConsumerStatefulWidget {
   const HistoricalDataScreen({super.key});
 
@@ -27,6 +29,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
   bool _isImporting = false;
   final double _importProgress = 0.0;
   String? _statusMessage;
+  HistoricalPlotType _plotType = HistoricalPlotType.avgPrice;
 
   @override
   Widget build(BuildContext context) {
@@ -36,21 +39,21 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     return Scaffold(
       backgroundColor: ThemeConstants.creamApp,
       appBar: AppBar(
-        title: Text(l10n.historicalData, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange)),
+        title: Text(l10n.historicalData, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: ThemeConstants.textDark)),
         backgroundColor: ThemeConstants.creamApp,
         elevation: 0,
-        foregroundColor: ThemeConstants.headingOrange,
-        iconTheme: const IconThemeData(color: ThemeConstants.headingOrange),
+        foregroundColor: ThemeConstants.textDark,
+        iconTheme: const IconThemeData(color: ThemeConstants.textDark),
         actions: [
           IconButton(
-            icon: const Icon(Icons.download_outlined),
+            icon: const Icon(Icons.download_outlined, color: ThemeConstants.headingOrange),
             onPressed: () {
               final data = ref.read(historicalPricesProvider(fromDate: _fromDate, toDate: _toDate)).value ?? [];
               _exportToExcel(data);
             },
           ),
           IconButton(
-            icon: const Icon(Icons.sync_outlined),
+            icon: const Icon(Icons.sync_outlined, color: ThemeConstants.headingOrange),
             onPressed: () => _syncData(),
           ),
           PopupMenuButton<String>(
@@ -126,6 +129,8 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                 ),
               _buildDateRangeSelector(l10n),
               const SizedBox(height: 16),
+              _buildPlotTypeSelector(l10n),
+              const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _buildChartWithBadge(data, l10n),
@@ -134,8 +139,16 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
               _buildRangeStatsSummary(data, l10n),
               const SizedBox(height: 12),
               _buildTrendInsight(data, l10n),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  l10n.translate('average_disclaimer'),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic),
+                ),
+              ),
               const SizedBox(height: 24),
-              const SizedBox(height: 8),
             ],
           ),
         ),
@@ -214,6 +227,58 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     );
   }
 
+  Widget _buildPlotTypeSelector(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildTypeChip(l10n.avgPriceLabel, HistoricalPlotType.avgPrice),
+            const SizedBox(width: 8),
+            _buildTypeChip(l10n.maxPriceLabel, HistoricalPlotType.maxPrice),
+            const SizedBox(width: 8),
+            _buildTypeChip(l10n.lotQuantity, HistoricalPlotType.quantity),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeChip(String label, HistoricalPlotType type) {
+    final isSelected = _plotType == type;
+    return GestureDetector(
+      onTap: () => setState(() => _plotType = type),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? ThemeConstants.primaryGreen : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? ThemeConstants.primaryGreen : Colors.grey.shade300,
+            width: 1,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(
+              color: ThemeConstants.primaryGreen.withOpacity(0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ] : [],
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.outfit(
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildChartWithBadge(List<AuctionData> data, AppLocalizations l10n) {
     if (data.length < 2) return const SizedBox.shrink();
 
@@ -254,8 +319,25 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
   Widget _buildRangeStatsSummary(List<AuctionData> data, AppLocalizations l10n) {
     if (data.isEmpty) return const SizedBox.shrink();
 
-    final maxPrice = data.fold<double>(0, (prev, e) => e.avgPrice > prev ? e.avgPrice : prev);
-    final minPrice = data.fold<double>(data.first.avgPrice, (prev, e) => e.avgPrice < prev ? e.avgPrice : prev);
+    double maxVal;
+    double minVal;
+
+    switch(_plotType) {
+      case HistoricalPlotType.maxPrice:
+        maxVal = data.fold<double>(0, (prev, e) => e.maxPrice > prev ? e.maxPrice : prev);
+        minVal = data.fold<double>(data.first.maxPrice, (prev, e) => e.maxPrice < prev ? e.maxPrice : prev);
+        break;
+      case HistoricalPlotType.quantity:
+        maxVal = data.fold<double>(0, (prev, e) => e.quantity > prev ? e.quantity : prev);
+        minVal = data.fold<double>(data.first.quantity, (prev, e) => e.quantity < prev ? e.quantity : prev);
+        break;
+      default:
+        maxVal = data.fold<double>(0, (prev, e) => e.avgPrice > prev ? e.avgPrice : prev);
+        minVal = data.fold<double>(data.first.avgPrice, (prev, e) => e.avgPrice < prev ? e.avgPrice : prev);
+    }
+
+    final unit = _plotType == HistoricalPlotType.quantity ? " ${l10n.kg}" : "";
+    final prefix = _plotType == HistoricalPlotType.quantity ? "" : "₹";
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -273,7 +355,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                   child: Row(
                     children: [
                       Expanded(child: Text(l10n.highestInRange, style: GoogleFonts.outfit(fontSize: 13, color: Colors.black87))),
-                      Text("₹${NumberFormat("#,##0").format(maxPrice)}", style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text("$prefix${NumberFormat("#,##0").format(maxVal)}$unit", style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -285,7 +367,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                   child: Row(
                     children: [
                       Expanded(child: Text(l10n.lowestInRange, style: GoogleFonts.outfit(fontSize: 13, color: Colors.black87))),
-                      Text("₹${NumberFormat("#,##0").format(minPrice)}", style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
+                      Text("$prefix${NumberFormat("#,##0").format(minVal)}$unit", style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -298,7 +380,12 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
   }
 
   Widget _buildTrendInsight(List<AuctionData> data, AppLocalizations l10n) {
-    final avg = data.isEmpty ? 0 : data.fold<double>(0, (sum, e) => sum + e.avgPrice) / data.length;
+    if (_plotType == HistoricalPlotType.quantity) return const SizedBox.shrink();
+
+    final avg = data.isEmpty ? 0 : data.fold<double>(0, (sum, e) {
+       return sum + (_plotType == HistoricalPlotType.maxPrice ? e.maxPrice : e.avgPrice);
+    }) / data.length;
+    
     // Assume 10-year historical average is around 1800 for context if not enough data
     const historicalNorm = 1800.0;
     final isAbove = avg > historicalNorm;
@@ -403,30 +490,53 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     // Sort chronological for calculations
     final chronData = List<AuctionData>.from(data)..sort((a,b) => a.date.compareTo(b.date));
     
-    // Get performance points (SMA + Bands) using 14-day period
-    final performance = PriceAnalyticsService().getPricePerformance(chronData, period: 7); // Use 7-day for faster responsiveness on filtered ranges
-    
     List<FlSpot> actualSpots = [];
     List<FlSpot> smaSpots = [];
     List<FlSpot> upperSpots = [];
     List<FlSpot> lowerSpots = [];
     
-    // If we have performance points, use them. Otherwise fallback to basic spots.
-    if (performance.isNotEmpty) {
+    final isPrice = _plotType != HistoricalPlotType.quantity;
+    
+    // Only calculate technical analysis for price-based plots
+    final List<PricePerformancePoint> performance = isPrice 
+        ? PriceAnalyticsService().getPricePerformance(chronData, period: 7) 
+        : [];
+    
+    if (performance.isNotEmpty && isPrice) {
       for (int i = 0; i < performance.length; i++) {
         final p = performance[i];
-        actualSpots.add(FlSpot(i.toDouble(), p.actual));
+        double value;
+        switch(_plotType) {
+          case HistoricalPlotType.maxPrice: value = chronData[chronData.length - performance.length + i].maxPrice; break;
+          default: value = p.actual;
+        }
+        actualSpots.add(FlSpot(i.toDouble(), value));
         smaSpots.add(FlSpot(i.toDouble(), p.sma));
         upperSpots.add(FlSpot(i.toDouble(), p.upperBand));
         lowerSpots.add(FlSpot(i.toDouble(), p.lowerBand));
       }
     } else {
       for (int i = 0; i < chronData.length; i++) {
-        actualSpots.add(FlSpot(i.toDouble(), chronData[i].avgPrice));
+        double value;
+        switch(_plotType) {
+          case HistoricalPlotType.maxPrice: value = chronData[i].maxPrice; break;
+          case HistoricalPlotType.quantity: value = chronData[i].quantity; break;
+          default: value = chronData[i].avgPrice;
+        }
+        actualSpots.add(FlSpot(i.toDouble(), value));
       }
     }
 
-    final avgPrice = data.fold<double>(0, (sum, e) => sum + e.avgPrice) / data.length;
+    final double totalValue = data.fold<double>(0, (sum, e) {
+      switch(_plotType) {
+        case HistoricalPlotType.maxPrice: return sum + e.maxPrice;
+        case HistoricalPlotType.quantity: return sum + e.quantity;
+        default: return sum + e.avgPrice;
+      }
+    });
+    final periodAvg = data.isEmpty ? 0.0 : totalValue / data.length;
+    final l10n = AppLocalizations.of(context);
+    final unit = _plotType == HistoricalPlotType.quantity ? l10n.kg : "₹";
 
     return LineChart(
       LineChartData(
@@ -448,10 +558,14 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                 if (spot.barIndex != totalBars - 1) return null; 
                 
                 final date = chronData[spot.x.toInt()].date;
+                final valueString = _plotType == HistoricalPlotType.quantity 
+                  ? "${NumberFormat("#,###").format(spot.y)} $unit" 
+                  : "$unit${NumberFormat("#,###").format(spot.y)}";
+                
                 return LineTooltipItem(
-                  "${DateFormat('dd MMM yyyy').format(date)}\n₹${NumberFormat("#,###").format(spot.y)}",
+                  "${DateFormat('dd MMM yyyy').format(date)}\n$valueString",
                   GoogleFonts.outfit(
-                    color: ThemeConstants.primaryGreen,
+                    color: ThemeConstants.secondaryGreen,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -471,7 +585,14 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
               sideTitles: SideTitles(
                 showTitles: true, 
                 reservedSize: 45,
-                getTitlesWidget: (value, meta) => Text(NumberFormat("#,###").format(value), style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                getTitlesWidget: (value, meta) {
+                  if (value == 0) return const SizedBox();
+                  String text = NumberFormat("#,###").format(value);
+                  if (_plotType == HistoricalPlotType.quantity && value >= 1000) {
+                    text = "${(value/1000).toStringAsFixed(1)}k";
+                  }
+                  return Text(text, style: const TextStyle(color: Colors.grey, fontSize: 10));
+                },
               ),
             ),
             bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -485,7 +606,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
             LineChartBarData(
               spots: upperSpots,
               isCurved: true,
-              color: Colors.grey.withOpacity(0.1),
+              color: ThemeConstants.softGreen.withOpacity(0.5),
               barWidth: 1,
               dotData: const FlDotData(show: false),
             ),
@@ -494,12 +615,12 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
             LineChartBarData(
               spots: lowerSpots,
               isCurved: true,
-              color: Colors.grey.withOpacity(0.1),
+              color: ThemeConstants.softGreen.withOpacity(0.5),
               barWidth: 1,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: Colors.grey.withOpacity(0.03),
+                color: ThemeConstants.softGreen.withOpacity(0.2),
                 cutOffY: 0,
                 applyCutOffY: false,
               ),
@@ -509,7 +630,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
             LineChartBarData(
               spots: smaSpots,
               isCurved: true,
-              color: Colors.orange.withOpacity(0.3),
+              color: ThemeConstants.smaGold.withOpacity(0.6),
               barWidth: 1.5,
               dotData: const FlDotData(show: false),
             ),
@@ -517,14 +638,14 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
           LineChartBarData(
             spots: actualSpots,
             isCurved: true,
-            color: ThemeConstants.primaryGreen,
+            color: ThemeConstants.secondaryGreen,
             barWidth: 2,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [ThemeConstants.primaryGreen.withOpacity(0.1), ThemeConstants.primaryGreen.withOpacity(0)],
+                colors: [ThemeConstants.secondaryGreen.withOpacity(0.1), ThemeConstants.secondaryGreen.withOpacity(0)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -534,8 +655,8 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
         extraLinesData: ExtraLinesData(
           horizontalLines: [
             HorizontalLine(
-              y: avgPrice,
-              color: ThemeConstants.primaryGreen.withOpacity(0.3),
+              y: periodAvg,
+              color: ThemeConstants.secondaryGreen.withOpacity(0.3),
               strokeWidth: 1,
               dashArray: [5, 5],
             ),

@@ -264,11 +264,11 @@ class DashboardScreen extends ConsumerWidget {
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: ThemeConstants.headingOrange,
+                color: ThemeConstants.textDark,
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.refresh, color: ThemeConstants.forestGreen),
+              icon: const Icon(Icons.refresh, color: ThemeConstants.headingOrange),
               onPressed: () async {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -323,7 +323,7 @@ class DashboardScreen extends ConsumerWidget {
                     child: ElevatedButton(
                       onPressed: () => _showAuctionDetails(context, auction, l10n),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: ThemeConstants.paleGreen.withValues(alpha: 0.5),
+                        backgroundColor: ThemeConstants.softGreen.withValues(alpha: 0.5),
                         foregroundColor: ThemeConstants.forestGreen,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -488,7 +488,7 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             Text(
               l10n.priceTrend,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
             ),
             Row(
               children: [
@@ -651,7 +651,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               l10n.pricePerformance,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
             ),
           ],
         ),
@@ -681,7 +681,7 @@ class DashboardScreen extends ConsumerWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                     _buildLegendItem(ThemeConstants.accentGold, l10n.translate('trend_14day')),
+                     _buildLegendItem(ThemeConstants.smaGold, l10n.translate('trend_14day')),
                      const SizedBox(width: 12),
                      _buildLegendItem(const Color(0xFF26A69A), l10n.translate('actual_price')),
                      const SizedBox(width: 12),
@@ -753,7 +753,7 @@ class DashboardScreen extends ConsumerWidget {
                               if (spot.barIndex == 3) { // SMA
                                 return LineTooltipItem(
                                   '${l10n.translate('sma_14_label')}: ₹${spot.y.toStringAsFixed(0)}',
-                                  const TextStyle(color: ThemeConstants.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
+                                  const TextStyle(color: ThemeConstants.smaGold, fontWeight: FontWeight.bold, fontSize: 11),
                                 );
                               }
                               return null;
@@ -794,7 +794,7 @@ class DashboardScreen extends ConsumerWidget {
                         LineChartBarData(
                           spots: smaSpots,
                           isCurved: true,
-                          color: ThemeConstants.accentGold,
+                          color: ThemeConstants.smaGold,
                           barWidth: 2,
                           dotData: const FlDotData(show: false),
                         ),
@@ -841,7 +841,7 @@ class DashboardScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: ThemeConstants.headingOrange, fontSize: 9, fontWeight: FontWeight.bold)),
+          Text(title, style: const TextStyle(color: ThemeConstants.textDark, fontSize: 9, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 9, height: 1.4)),
         ],
@@ -870,7 +870,7 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Text(
           l10n.weeklyAuctions,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
         ),
         const SizedBox(height: 12),
         Container(
@@ -1055,7 +1055,7 @@ class DashboardScreen extends ConsumerWidget {
                   style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: ThemeConstants.headingOrange,
+                    color: ThemeConstants.textDark,
                   ),
                 ),
                 const SizedBox(height: 16),

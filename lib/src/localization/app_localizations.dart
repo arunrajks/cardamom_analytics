@@ -19,6 +19,8 @@ class AppLocalizations {
       'sync_now': 'Sync Now',
       'latest_auctions': 'Latest Auctions',
       'avg_price': 'Avg Price',
+      'lot_quantity': 'Lot Quantity',
+      'kg': 'kg',
       'qty_sold': 'Qty Sold',
       'volatility_30_day': '30-Day Variability',
       'volatility_help_title': '30-Day Variability',
@@ -66,7 +68,6 @@ class AppLocalizations {
       'advice_stable': 'Prices are around normal levels for this time of year.',
       'syncing': 'Syncing latest data...',
       'updated': 'Data updated!',
-      'kg': 'kg',
       'total': 'Total',
       'mean': 'Mean',
       'median': 'Median',
@@ -229,6 +230,8 @@ class AppLocalizations {
       'sync_now': 'സിങ്ക് ചെയ്യുക',
       'latest_auctions': 'പുതിയ ലേലങ്ങൾ',
       'avg_price': 'ശരാശരി വില',
+      'lot_quantity': 'മൊത്തം അളവ്',
+      'kg': 'കിലോ',
       'qty_sold': 'വിൽപ്പന അളവ്',
       'total_qty': 'ആകെ അളവ്',
       'volatility_30_day': '30-ദിവസത്തെ വ്യതിയാനം (Variability)',
@@ -276,7 +279,6 @@ class AppLocalizations {
       'advice_stable': 'വില സാധാരണ നിലയിലാണ്.',
       'syncing': 'പുതിയ വിവരങ്ങൾ ശേഖരിക്കുന്നു...',
       'updated': 'വിവരങ്ങൾ പുതുക്കി!',
-      'kg': 'കിലോ',
       'total': 'ആകെ',
       'mean': 'ശരാശരി',
       'median': 'മധ്യം',
@@ -439,6 +441,8 @@ class AppLocalizations {
       'sync_now': 'இணைத்தல்',
       'latest_auctions': 'சமீபத்திய ஏலம்',
       'avg_price': 'சராசரி விலை',
+      'lot_quantity': 'மொத்த அளவு',
+      'kg': 'கிலோ',
       'qty_sold': 'விற்பனை அளவு',
       'volatility_30_day': '30-நாள் மாறுபாடு (Variability)',
       'volatility_help_title': '30-நாள் மாறுபாடு',
@@ -486,7 +490,6 @@ class AppLocalizations {
       'advice_stable': 'விலை வழக்கமான அளவில் உள்ளது.',
       'syncing': 'புதிய தகவல்களை சேகரிக்கிறது...',
       'updated': 'தகவல் புதுப்பிக்கப்பட்டது!',
-      'kg': 'கிலோ',
       'total': 'மொத்தம்',
       'mean': 'சராசரி',
       'median': 'நடுநிலை',
@@ -656,6 +659,8 @@ class AppLocalizations {
   String get syncNow => translate('sync_now');
   String get latestAuctions => translate('latest_auctions');
   String get avgPrice => translate('avg_price');
+  String get lotQuantity => translate('lot_quantity');
+  String get kg => translate('kg');
   String get qtySold => translate('qty_sold');
   String get totalQty => translate('total_qty');
   String get marketInsights => translate('market_insights');
@@ -692,7 +697,6 @@ class AppLocalizations {
   String get email => translate('email');
   String get phoneNumber => translate('phone_number');
   String get profilePrivacyNote => translate('profile_privacy_note');
-  String get kg => translate('kg');
   String get total => translate('total');
   String get mean => translate('mean');
   String get median => translate('median');
