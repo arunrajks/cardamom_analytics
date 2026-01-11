@@ -13,27 +13,12 @@ void callbackDispatcher() {
     debugPrint("Background sync task started: $task");
     
     try {
-      // 0. Smart Scheduling: Only run during specific windows to save battery
+      // 0. Scheduling: Allow sync between 7 AM and 11:30 PM (Auction hours + buffer)
       final now = DateTime.now();
-      final minutesSinceMidnight = now.hour * 60 + now.minute;
+      final currentHour = now.hour;
       
-      bool isInWindow = false;
-      
-      // Window 1: 11:30 AM (690m) to 3:00 PM (900m)
-      if (minutesSinceMidnight >= 690 && minutesSinceMidnight <= 900) {
-        isInWindow = true;
-      }
-      // Window 2: 4:30 PM (990m) to 6:30 PM (1110m)
-      else if (minutesSinceMidnight >= 990 && minutesSinceMidnight <= 1110) {
-        isInWindow = true;
-      }
-      // Window 3: 9:00 PM (1260m) to 9:30 PM (1290m)
-      else if (minutesSinceMidnight >= 1260 && minutesSinceMidnight <= 1290) {
-        isInWindow = true;
-      }
-
-      if (!isInWindow) {
-        debugPrint("Background sync skipped: Outside active auction windows ($now)");
+      if (currentHour < 7 || currentHour >= 23) {
+        debugPrint("Background sync skipped: Quiet hours (11:30 PM - 7 AM)");
         return true; 
       }
 
@@ -47,20 +32,25 @@ void callbackDispatcher() {
       // 2. Check if notifications are enabled
       final enabled = await AppPreferences.areNotificationsEnabled();
       if (!enabled) {
-        debugPrint("Notifications are disabled. Skipping check.");
+        debugPrint("Notifications are disabled in settings. Skipping.");
         return true;
       }
 
       // 3. Get last known auction date
       final lastKnownDate = await AppPreferences.getLastAuctionDate();
+      debugPrint("Checking for new data since: $lastKnownDate");
       
       // 4. Check for new data
       final latestAuction = await syncService.checkForNewData(lastKnownDate);
 
       if (latestAuction != null) {
-        debugPrint("New auction data found! Date: ${latestAuction.date}");
+        debugPrint("New auction data detected! Syncing and notifying...");
         
-        // 5. Trigger notification
+        // 5. Perform actual sync so the app data is fresh
+        final newRecords = await syncService.syncNewData(maxPages: 2);
+        debugPrint("Sync completed in background. New records: $newRecords");
+        
+        // 6. Trigger notification
         await notificationService.showNewAuctionNotification(
           auctioneer: latestAuction.auctioneer,
           avgPrice: latestAuction.avgPrice,
@@ -68,13 +58,10 @@ void callbackDispatcher() {
           date: latestAuction.date,
         );
 
-        // 6. Update last known date to avoid spamming
+        // 7. Update last known date (syncNewData does this, but we reinforce it here)
         await AppPreferences.setLastAuctionDate(latestAuction.date);
-        
-        // 7. Optional: Perform a full sync of new data if user wants
-        // await syncService.syncNewData(maxPages: 2);
       } else {
-        debugPrint("No new auction data found.");
+        debugPrint("No new auction data found at this time.");
       }
 
       return true;

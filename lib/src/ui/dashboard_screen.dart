@@ -48,11 +48,9 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 24),
                         _buildTrendSection(context, ref, prices, l10n),
                         const SizedBox(height: 24),
-                        _buildPricePerformanceSection(context, prices, analytics, l10n),
-                        const SizedBox(height: 16),
-                        _buildWeeklyMomentum(context, insights, l10n),
+                        _buildWeeklySnapshotCard(context, insights, l10n),
                         const SizedBox(height: 24),
-                        _buildWeeklyRangeIndicator(context, prices, l10n),
+                        _buildPricePerformanceSection(context, prices, analytics, l10n),
                         const SizedBox(height: 24),
                         _buildWeeklyAuctionSummary(context, prices, l10n),
                         const SizedBox(height: 40),
@@ -266,7 +264,7 @@ class DashboardScreen extends ConsumerWidget {
               style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: ThemeConstants.forestGreen,
+                color: ThemeConstants.headingOrange,
               ),
             ),
             IconButton(
@@ -490,7 +488,7 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             Text(
               l10n.priceTrend,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
             ),
             Row(
               children: [
@@ -653,7 +651,7 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(width: 8),
             Text(
               l10n.pricePerformance,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
             ),
           ],
         ),
@@ -843,7 +841,7 @@ class DashboardScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(color: ThemeConstants.forestGreen, fontSize: 9, fontWeight: FontWeight.bold)),
+          Text(title, style: const TextStyle(color: ThemeConstants.headingOrange, fontSize: 9, fontWeight: FontWeight.bold)),
           const SizedBox(height: 4),
           Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 9, height: 1.4)),
         ],
@@ -851,190 +849,6 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWeeklyMomentum(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
-    bool isPositive = insights.weeklyMomentum >= 0;
-    return GestureDetector(
-      onTap: () => _showExplanationDialog(
-        context, 
-        l10n.momentumExplanation, 
-        l10n.momentumDesc
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: (isPositive ? Colors.green : Colors.red).withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                isPositive ? Icons.trending_up : Icons.trending_down,
-                color: isPositive ? Colors.green : Colors.red,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.weeklyMomentum,
-                    style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey, fontWeight: FontWeight.w500),
-                  ),
-                  Row(
-                    children: [
-                      Text(
-                        '${isPositive ? '+' : ''}${insights.weeklyMomentum.toStringAsFixed(1)}%',
-                        style: GoogleFonts.outfit(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: isPositive ? Colors.green : Colors.red,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.vsLastWeek,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Icon(Icons.info_outline, color: Colors.grey, size: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWeeklyRangeIndicator(BuildContext context, List<AuctionData> prices, AppLocalizations l10n) {
-    if (prices.isEmpty) return const SizedBox.shrink();
-    
-    // Look at last 7 days of data
-    final last7Days = prices.take(30).where((p) => 
-      p.date.isAfter(DateTime.now().subtract(const Duration(days: 7)))
-    ).toList();
-    
-    final dataPool = last7Days.isEmpty ? prices.take(30).toList() : last7Days;
-
-    final minP = dataPool.map((p) => p.avgPrice).reduce(min);
-    final maxP = dataPool.map((p) => p.avgPrice).reduce(max);
-    final avgP = prices.first.avgPrice; // Today's average relative to the week's range
-    
-    // Calculate position % (0 to 1)
-    double position = 0.5;
-    if (maxP != minP) {
-      position = (avgP - minP) / (maxP - minP);
-    }
-
-    return GestureDetector(
-      onTap: () => _showExplanationDialog(
-        context, 
-        l10n.rangeExplanation, 
-        l10n.rangeDesc
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                l10n.weeklyRange,
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen),
-              ),
-              const Icon(Icons.info_outline, color: Colors.grey, size: 16),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                     _buildRangeStat(l10n.min, minP, Colors.grey),
-                     _buildRangeStat(l10n.avgPrice, avgP, ThemeConstants.forestGreen),
-                     _buildRangeStat(l10n.max, maxP, Colors.grey),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Stack(
-                  alignment: Alignment.centerLeft,
-                  children: [
-                    Container(
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                    ),
-                    FractionallySizedBox(
-                      widthFactor: position.clamp(0.01, 1.0),
-                      child: Container(
-                        height: 12,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [ThemeConstants.primaryGreen.withValues(alpha: 0.5), ThemeConstants.primaryGreen],
-                          ),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                      ),
-                    ),
-                    Positioned(
-                      left: (MediaQuery.of(context).size.width - 88) * position.clamp(0.0, 1.0) - 8,
-                      child: Container(
-                        width: 16,
-                        height: 16,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: ThemeConstants.primaryGreen, width: 3),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4)],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRangeStat(String label, double value, Color color) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 4),
-        Text(
-          '₹${NumberFormat("#,###").format(value)}',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color),
-        ),
-      ],
-    );
-  }
 
   Widget _buildWeeklyAuctionSummary(BuildContext context, List<AuctionData> prices, AppLocalizations l10n) {
     if (prices.isEmpty) return const SizedBox.shrink();
@@ -1056,7 +870,7 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Text(
           l10n.weeklyAuctions,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen),
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
         ),
         const SizedBox(height: 12),
         Container(
@@ -1209,6 +1023,239 @@ class DashboardScreen extends ConsumerWidget {
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
       ],
     );
+  }
+
+  Widget _buildWeeklySnapshotCard(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
+    final isUp = insights.weeklyMomentum >= 0;
+    final momentumText = "${isUp ? '+' : ''}${insights.weeklyMomentum.toStringAsFixed(1)}%";
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.weeklyMarketSnapshot,
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: ThemeConstants.headingOrange,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: Color(0xFFF3F0EC)),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Icon(
+                      isUp ? Icons.trending_up : Icons.trending_down,
+                      color: isUp ? Colors.green : Colors.red,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      l10n.thisWeek,
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: ThemeConstants.textDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      momentumText,
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isUp ? Colors.green : Colors.red,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      isUp ? l10n.upFromLastWeek : l10n.downFromLastWeek,
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildSnapshotStat(l10n.min, "₹${insights.weeklyMin.toStringAsFixed(0)}"),
+                    _buildSnapshotStat(l10n.avgPriceLabel, "₹${insights.weeklyAvg.toStringAsFixed(0)}"),
+                    _buildSnapshotStat(l10n.max, "₹${insights.weeklyMax.toStringAsFixed(0)}"),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Today Price Badge
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F7F2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      "${l10n.todayPriceLabel} ₹${(insights.stats['current'] ?? insights.weeklyAvg).toStringAsFixed(0)}",
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        color: ThemeConstants.primaryGreen,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Range Slider Visualization
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Container(
+                      height: 10,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEDEDED),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment(insights.pricePositionInWeeklyRange * 2 - 1, 0),
+                      child: Container(
+                        height: 20,
+                        width: 20,
+                        decoration: BoxDecoration(
+                          color: ThemeConstants.textDark,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(l10n.min, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text(l10n.max, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("₹${insights.weeklyMin.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    Text("₹${insights.weeklyMax.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                const Divider(height: 1, color: Color(0xFFF3F0EC)),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFE8F5E9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.check, size: 14, color: Colors.green),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _getWeeklyPriceMessage(insights, l10n),
+                        style: GoogleFonts.outfit(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: ThemeConstants.textDark,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F5F0),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.calendar_today, size: 14, color: Colors.brown),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.weeklyVolatilityLabel,
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _getWeeklyVolatilityLabel(insights.weeklyVolatility, l10n),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: ThemeConstants.textDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSnapshotStat(String label, String value) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ThemeConstants.textDark)),
+      ],
+    );
+  }
+
+  String _getWeeklyPriceMessage(MarketInsights insights, AppLocalizations l10n) {
+    if (insights.pricePositionInWeeklyRange > 0.8) return l10n.tradingNearHigh;
+    if (insights.pricePositionInWeeklyRange < 0.2) return l10n.tradingNearLow;
+    return l10n.tradingNearMid;
+  }
+
+  String _getWeeklyVolatilityLabel(double volatility, AppLocalizations l10n) {
+    if (volatility > 3.0) return l10n.volatilityHigh;
+    if (volatility > 1.5) return l10n.volatilityModerate;
+    return l10n.volatilityLow;
   }
 
   void _showExplanationDialog(BuildContext context, String title, String message) {

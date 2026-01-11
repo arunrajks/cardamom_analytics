@@ -34,12 +34,13 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: ThemeConstants.creamApp,
       appBar: AppBar(
-        title: Text(l10n.historicalData, style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: Text(l10n.historicalData, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange)),
+        backgroundColor: ThemeConstants.creamApp,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: ThemeConstants.headingOrange,
+        iconTheme: const IconThemeData(color: ThemeConstants.headingOrange),
         actions: [
           IconButton(
             icon: const Icon(Icons.download_outlined),
@@ -206,7 +207,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade200),
             ),
-            child: const Icon(Icons.tune, color: Color(0xFF1B4332), size: 20),
+            child: const Icon(Icons.tune, color: ThemeConstants.primaryGreen, size: 20),
           ),
         ],
       ),
@@ -450,7 +451,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                 return LineTooltipItem(
                   "${DateFormat('dd MMM yyyy').format(date)}\n₹${NumberFormat("#,###").format(spot.y)}",
                   GoogleFonts.outfit(
-                    color: const Color(0xFF1B4332),
+                    color: ThemeConstants.primaryGreen,
                     fontWeight: FontWeight.bold,
                     fontSize: 12,
                   ),
@@ -516,14 +517,14 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
           LineChartBarData(
             spots: actualSpots,
             isCurved: true,
-            color: const Color(0xFF1B4332),
+            color: ThemeConstants.primaryGreen,
             barWidth: 2,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [const Color(0xFF1B4332).withOpacity(0.1), const Color(0xFF1B4332).withOpacity(0)],
+                colors: [ThemeConstants.primaryGreen.withOpacity(0.1), ThemeConstants.primaryGreen.withOpacity(0)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -534,7 +535,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
           horizontalLines: [
             HorizontalLine(
               y: avgPrice,
-              color: const Color(0xFF1B4332).withOpacity(0.3),
+              color: ThemeConstants.primaryGreen.withOpacity(0.3),
               strokeWidth: 1,
               dashArray: [5, 5],
             ),

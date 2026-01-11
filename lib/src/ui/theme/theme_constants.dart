@@ -3,11 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 class ThemeConstants {
   // Premium Nature Palette
-  static const Color forestGreen = Color(0xFF1B4D3E); // Deep Emerald
+  static const Color forestGreen = Color(0xFF1B5E20); // Deep Forest Green
   static const Color primaryGreen = forestGreen;
-  static const Color creamApp = Color(0xFFF9F6F0); // Premium cream background
+  static const Color creamApp = Color(0xFFF9F6F0); // Premium ivory background
   static const Color paleGreen = Color(0xFFE8F5E9); // Soft light green
-  static const Color woodBrown = Color(0xFF8B4513); // Earth tone
+  static const Color headingOrange = Color(0xFFE65100); // Professional orange for sub-headings
   static const Color accentGold = Color(0xFFD4AF37); // Metallic Gold
   
   static const Color surfaceWhite = Colors.white;
@@ -19,7 +19,7 @@ class ThemeConstants {
     colorScheme: ColorScheme.fromSeed(
       seedColor: primaryGreen,
       primary: primaryGreen,
-      secondary: accentGold,
+      secondary: headingOrange,
       surface: surfaceWhite,
       onSurface: textDark,
       // background is deprecated, use surface variant or background in Scaffold

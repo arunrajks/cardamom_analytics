@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,8 @@ import 'package:cardamom_analytics/src/ui/theme/theme_constants.dart';
 import 'package:cardamom_analytics/src/services/price_analytics_service.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
 import 'package:cardamom_analytics/src/utils/app_dates.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
 
 class AnalyticsScreen extends ConsumerWidget {
   const AnalyticsScreen({super.key});
@@ -20,10 +23,11 @@ class AnalyticsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(
           l10n.analytics,
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: ThemeConstants.headingOrange),
         ),
-        backgroundColor: ThemeConstants.primaryGreen,
+        backgroundColor: ThemeConstants.creamApp,
         elevation: 0,
+        iconTheme: const IconThemeData(color: ThemeConstants.primaryGreen),
       ),
       body: asyncData.when(
         data: (data) {
@@ -58,6 +62,7 @@ class AnalyticsScreen extends ConsumerWidget {
       ),
     );
   }
+
 
   void _showHelpDialog(BuildContext context, String title, String description, AppLocalizations l10n) {
     showDialog(
@@ -149,6 +154,11 @@ class AnalyticsScreen extends ConsumerWidget {
     final riskColor = riskKey == 'high' ? Colors.red : (riskKey == 'moderate' ? Colors.orange : Colors.green);
     final riskIcon = riskKey == 'high' ? Icons.error_outline : (riskKey == 'moderate' ? Icons.warning_amber_rounded : Icons.check_circle_outline);
 
+    // Verdict Logic
+    final bool isSell = insights.signal.contains('sell');
+    final verdictColor = isSell ? Colors.green : (insights.signal.contains('wait') ? Colors.orange : Colors.blue);
+    final verdictIcon = isSell ? Icons.check_box_outlined : Icons.info_outline;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -156,26 +166,64 @@ class AnalyticsScreen extends ConsumerWidget {
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: const Color(0xFFF3E5D5)),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        alignment: WrapAlignment.spaceBetween,
         children: [
-          const Icon(Icons.comment_bank, color: Color(0xFF4A4135), size: 20),
-          const SizedBox(width: 8),
-          Text(
-            l10n.decisionSummary,
-            style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF4A4135)),
-          ),
-          const Spacer(),
-          _buildDecisionBadge(l10n.sell, insights.signal.contains('sell') ? l10n.yes : l10n.no, insights.signal.contains('sell') ? Colors.green : Colors.red),
-          const SizedBox(width: 12),
-          _buildDecisionBadge(l10n.hold, insights.signal.contains('hold') ? l10n.yes : l10n.no, insights.signal.contains('hold') ? Colors.green : Colors.red),
-          const SizedBox(width: 12),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(riskIcon, color: riskColor, size: 14),
-              const SizedBox(width: 4),
+              const Icon(Icons.psychology_outlined, color: Color(0xFF4A4135), size: 20),
+              const SizedBox(width: 8),
               Text(
-                "${l10n.riskLabel}: ${l10n.translate(riskKey)}",
-                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF4A4135)),
+                l10n.decisionSummary,
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF4A4135)),
+              ),
+            ],
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              // Action Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: verdictColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(verdictIcon, color: verdictColor, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.translate(insights.signal),
+                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: verdictColor),
+                    ),
+                  ],
+                ),
+              ),
+              // Risk Badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: riskColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(riskIcon, color: riskColor, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      "${l10n.riskLabel}: ${l10n.translate(riskKey)}",
+                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: riskColor),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -184,24 +232,16 @@ class AnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDecisionBadge(String label, String value, Color color) {
-    return Row(
-      children: [
-        Text("$label: ", style: const TextStyle(fontSize: 12, color: Color(0xFF4A4135))),
-        Text(
-          value,
-          style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: color),
-        ),
-      ],
-    );
-  }
 
   Widget _buildInsightRow(IconData icon, String text) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(icon, color: ThemeConstants.accentGold, size: 18),
         const SizedBox(width: 8),
-        Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        Expanded(
+          child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        ),
       ],
     );
   }
@@ -216,7 +256,7 @@ class AnalyticsScreen extends ConsumerWidget {
       children: [
         Text(
           l10n.marketRiskStability,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
         ),
         const SizedBox(height: 16),
         Container(
@@ -258,9 +298,23 @@ class AnalyticsScreen extends ConsumerWidget {
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildStatLabelValue(context, l10n.volatility30Day, "${risk['volatility'].toStringAsFixed(1)}%", l10n.volatilityHelpTitle, l10n.volatilityHelpDesc, l10n),
-                  _buildStatLabelValue(context, l10n.stabilityLevelLabel, "± ₹${insights.stats['stdDev']?.toStringAsFixed(0)}", l10n.stabilityHelpTitle, l10n.stabilityHelpDesc, l10n),
+                  Expanded(
+                    child: _buildStatLabelValue(
+                      context, 
+                      l10n.volatility30Day, 
+                      "${insights.thirtyDayChange >= 0 ? '+' : ''}${insights.thirtyDayChange.toStringAsFixed(1)}%", 
+                      l10n.volatilityHelpTitle, 
+                      l10n.volatilityHelpDesc, 
+                      l10n,
+                      valueColor: insights.thirtyDayChange > 0 ? Colors.green : (insights.thirtyDayChange < 0 ? Colors.red : ThemeConstants.textDark),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildStatLabelValue(context, l10n.stabilityLevelLabel, "± ₹${insights.thirtyDayStdDev.toStringAsFixed(0)}", l10n.stabilityHelpTitle, l10n.stabilityHelpDesc, l10n),
+                  ),
                 ],
               ),
             ],
@@ -270,26 +324,38 @@ class AnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatLabelValue(BuildContext context, String label, String value, String? helpTitle, String? helpDesc, AppLocalizations l10n) {
-    return Column(
+  Widget _buildStatLabelValue(BuildContext context, String label, String value, String? helpTitle, String? helpDesc, AppLocalizations l10n, {Color? valueColor}) {
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11)),
+            Expanded(
+              child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 11), softWrap: true),
+            ),
             if (helpTitle != null) ...[
               const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => _showHelpDialog(context, helpTitle, helpDesc!, l10n),
-                child: const Icon(Icons.info_outline, size: 12, color: Colors.grey),
-              ),
+              const Icon(Icons.info_outline, size: 12, color: Colors.grey),
             ],
           ],
         ),
         const SizedBox(height: 6),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: ThemeConstants.textDark)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: valueColor ?? ThemeConstants.textDark)),
       ],
     );
+
+    if (helpTitle != null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _showHelpDialog(context, helpTitle, helpDesc!, l10n),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: content,
+        ),
+      );
+    }
+    return content;
   }
 
 
@@ -301,7 +367,7 @@ class AnalyticsScreen extends ConsumerWidget {
       children: [
         Text(
           l10n.proTips,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
         ),
         const SizedBox(height: 16),
         Container(
@@ -367,53 +433,121 @@ class AnalyticsScreen extends ConsumerWidget {
           children: [
             Text(
               l10n.keyStatistics,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              l10n.yearsOfData(insights.dataYearCount),
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.headingOrange),
             ),
           ],
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildMultiRowStatCard(
-                l10n.priceLevelTitle,
-                l10n.lastThreeSeasons,
-                Icons.bar_chart,
-                Colors.green,
-                [
-                  _buildCardRow(context, l10n.typicalPriceLabel, "₹${insights.recentMedian.toStringAsFixed(0)}", l10n, helpTitle: l10n.typicalPriceHelpTitle, helpDesc: l10n.typicalPriceHelpDesc),
-                  const Divider(height: 24, color: Color(0xFFF3F0EC)),
-                  _buildCardRow(context, l10n.normalRangeSeasonal, "₹${insights.recentNormalRangeMin.toStringAsFixed(0)} - ${insights.recentNormalRangeMax.toStringAsFixed(0)}", l10n, helpTitle: l10n.normalRangeHelpTitle, helpDesc: l10n.normalRangeHelpDesc),
-                ],
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildMultiRowStatCard(
+                  l10n.priceLevelTitle,
+                  l10n.lastThreeSeasons,
+                  Icons.bar_chart,
+                  Colors.green,
+                  [
+                    _buildPriceLevelChart(context, insights, l10n),
+                  ],
+                  helpTitle: l10n.priceLevelHelpTitle,
+                  helpDesc: l10n.priceLevelHelpDesc,
+                  l10n: l10n,
+                ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: _buildMultiRowStatCard(
-                l10n.highestLowestTitle,
-                l10n.exceptionalYears,
-                Icons.unfold_more,
-                Colors.orange,
-                [
-                  _buildCardRow(context, l10n.highestSeenLabel, "₹${insights.stats['max']?.toStringAsFixed(0)}", l10n, badge: l10n.rareLabel, badgeColor: Colors.orange, helpTitle: l10n.highestSeenHelpTitle, helpDesc: l10n.highestSeenHelpDesc),
-                  const Divider(height: 24, color: Color(0xFFF3F0EC)),
-                  _buildCardRow(context, l10n.lowestSeenLabel, "₹${insights.stats['min']?.toStringAsFixed(0)}", l10n, badge: l10n.rareLabel, badgeColor: Colors.blue, helpTitle: l10n.lowestSeenHelpTitle, helpDesc: l10n.lowestSeenHelpDesc),
-                ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildMultiRowStatCard(
+                  l10n.highestLowestTitle,
+                  l10n.translate('full_history_label').replaceAll('{count}', insights.dataYearCount.toString()),
+                  Icons.unfold_more,
+                  Colors.orange,
+                  [
+                    _buildCardRow(
+                      context, 
+                      l10n.highestSeenLabel, 
+                      "₹${insights.stats['max']?.toStringAsFixed(0)}", 
+                      l10n, 
+                      icon: Icons.trending_up,
+                      iconColor: Colors.green,
+                      suffix: insights.highestPriceYear > 0 ? "(${insights.highestPriceYear})" : null,
+                      badge: l10n.rareLabel, 
+                      badgeColor: Colors.orange, 
+                      helpTitle: l10n.highestSeenHelpTitle, 
+                      helpDesc: l10n.highestSeenHelpDesc
+                    ),
+                    const Divider(height: 24, color: Color(0xFFF3F0EC)),
+                    _buildCardRow(
+                      context, 
+                      l10n.lowestSeenLabel, 
+                      "₹${insights.stats['min']?.toStringAsFixed(0)}", 
+                      l10n, 
+                      icon: Icons.trending_down,
+                      iconColor: Colors.red,
+                      suffix: insights.lowestPriceYear > 0 ? "(${insights.lowestPriceYear})" : null,
+                      badge: l10n.rareLabel, 
+                      badgeColor: Colors.blue, 
+                      helpTitle: l10n.lowestSeenHelpTitle, 
+                      helpDesc: l10n.lowestSeenHelpDesc
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Center(
+          child: Text(
+            l10n.translate('average_disclaimer'),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic),
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMultiRowStatCard(String title, String subtitle, IconData icon, Color color, List<Widget> children) {
+  Widget _buildMultiRowStatCard(String title, String subtitle, IconData icon, Color color, List<Widget> children, {bool noHorizontalPadding = false, String? helpTitle, String? helpDesc, AppLocalizations? l10n}) {
+    final header = Padding(
+      padding: EdgeInsets.symmetric(horizontal: noHorizontalPadding ? 20 : 0),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 16),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: ThemeConstants.textDark)),
+                    ),
+                    if (helpTitle != null) ...[
+                      const SizedBox(width: 4),
+                      const Icon(Icons.info_outline, size: 12, color: Colors.grey),
+                    ],
+                  ],
+                ),
+                Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.symmetric(
+        horizontal: noHorizontalPadding ? 0 : 20,
+        vertical: 20,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
@@ -421,25 +555,16 @@ class AnalyticsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Icon(icon, color: color, size: 16),
+          if (helpTitle != null && l10n != null)
+            Builder(
+              builder: (context) => GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _showHelpDialog(context, helpTitle, helpDesc!, l10n),
+                child: header,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: ThemeConstants.textDark)),
-                    Text(subtitle, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            )
+          else
+            header,
           const SizedBox(height: 20),
           ...children,
         ],
@@ -447,37 +572,222 @@ class AnalyticsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCardRow(BuildContext context, String label, String value, AppLocalizations l10n, {String? badge, Color? badgeColor, String? helpTitle, String? helpDesc}) {
+  Widget _buildPriceLevelChart(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
+    if (insights.seasonalAverages.isEmpty) {
+      return const SizedBox(
+        height: 120,
+        child: Center(child: Text("No seasonal data")),
+      );
+    }
+
+    final data = insights.seasonalAverages;
+    final double maxY = data.map((e) => e.value).reduce(max) * 1.25;
+    final double minY = data.map((e) => e.value).reduce(min) * 0.75;
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-            if (helpTitle != null) ...[
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => _showHelpDialog(context, helpTitle, helpDesc!, l10n),
-                child: const Icon(Icons.info_outline, size: 12, color: Colors.grey),
+        SizedBox(
+          height: 140,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20, right: 10, left: 10),
+            child: LineChart(
+              LineChartData(
+                gridData: const FlGridData(show: false),
+                titlesData: FlTitlesData(
+                  show: true,
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        int index = value.toInt();
+                        if (index < 0 || index >= data.length) return const SizedBox();
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(
+                            "S${index + 1}",
+                            style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        );
+                      },
+                      interval: 1,
+                      reservedSize: 22,
+                    ),
+                  ),
+                ),
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.2), width: 1),
+                  ),
+                ),
+                minX: 0,
+                maxX: (data.length - 1).toDouble(),
+                minY: minY,
+                maxY: maxY,
+                showingTooltipIndicators: data.asMap().entries.map((e) {
+                  return ShowingTooltipIndicators([
+                    LineBarSpot(
+                      LineChartBarData(spots: []), 0, FlSpot(e.key.toDouble(), e.value.value),
+                    ),
+                  ]);
+                }).toList(),
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.value)).toList(),
+                    isCurved: true,
+                    color: Colors.blue.shade700,
+                    barWidth: 3,
+                    isStrokeCapRound: true,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 4,
+                        color: Colors.blue.shade700,
+                        strokeWidth: 2,
+                        strokeColor: Colors.white,
+                      ),
+                    ),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.blue.shade700.withValues(alpha: 0.15),
+                          Colors.blue.shade700.withValues(alpha: 0.0),
+                        ],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  enabled: false, // Static labels as per mockup
+                  handleBuiltInTouches: false,
+                  touchTooltipData: LineTouchTooltipData(
+                    getTooltipColor: (spot) => Colors.transparent,
+                    tooltipRoundedRadius: 8,
+                    tooltipPadding: const EdgeInsets.only(bottom: 0),
+                    tooltipMargin: 8,
+                    getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
+                      return touchedBarSpots.map((barSpot) {
+                        return LineTooltipItem(
+                          "₹${NumberFormat("#,###").format(barSpot.y)}",
+                          GoogleFonts.outfit(
+                            color: ThemeConstants.textDark,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 10,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
               ),
-            ],
-          ],
+            ),
+          ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 12),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: ThemeConstants.textDark)),
-            if (badge != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: badgeColor?.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 9, fontWeight: FontWeight.bold)),
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: Colors.blue.shade700.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
               ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l10n.avgPrice,
+              style: const TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
+            ),
           ],
         ),
       ],
     );
+  }
+
+  Widget _buildCardRow(BuildContext context, String label, String value, AppLocalizations l10n, {IconData? icon, String? suffix, Color? iconColor, String? badge, Color? badgeColor, String? helpTitle, String? helpDesc}) {
+    final content = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (icon != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 14),
+            child: Icon(icon, color: iconColor ?? Colors.grey, size: 20),
+          ),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                  if (helpTitle != null) ...[
+                    const SizedBox(width: 4),
+                    const Icon(Icons.info_outline, size: 12, color: Colors.grey),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: value,
+                          style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: ThemeConstants.textDark,
+                          ),
+                        ),
+                        if (suffix != null)
+                          TextSpan(
+                            text: " $suffix",
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  if (badge != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: badgeColor?.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      child: Text(badge, style: TextStyle(color: badgeColor, fontSize: 9, fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (helpTitle != null) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _showHelpDialog(context, helpTitle, helpDesc!, l10n),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: content,
+        ),
+      );
+    }
+    return content;
   }
 
 

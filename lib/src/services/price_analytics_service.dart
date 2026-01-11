@@ -10,6 +10,7 @@ class MarketInsights {
   final List<double> recentArrivals;
   final Map<String, double> stats;
   final double volatility; 
+  final double thirtyDayChange;
   final double vsLastYear; 
   final double vsFiveYearAvg; 
   final double vsLongTermAvg; 
@@ -22,9 +23,19 @@ class MarketInsights {
   final double recentNormalRangeMin;
   final double recentNormalRangeMax;
   final double recentMedian;
+  final double recentStdDev;
+  final double thirtyDayStdDev;
   final String confidenceLevel; // 'low', 'medium', 'high'
   final DateTime? firstDataDate;
   final DateTime? lastDataDate;
+  final double weeklyMin;
+  final double weeklyMax;
+  final double weeklyAvg;
+  final double pricePositionInWeeklyRange; // 0.0 to 1.0
+  final double weeklyVolatility; // avg daily change for the week
+  final int highestPriceYear;
+  final int lowestPriceYear;
+  final List<MapEntry<String, double>> seasonalAverages; // Last 3 seasons
 
   MarketInsights({
     required this.season,
@@ -35,6 +46,7 @@ class MarketInsights {
     required this.recentArrivals,
     required this.stats,
     required this.volatility,
+    required this.thirtyDayChange,
     required this.vsLastYear,
     required this.vsFiveYearAvg,
     required this.vsLongTermAvg,
@@ -47,9 +59,19 @@ class MarketInsights {
     required this.recentNormalRangeMin,
     required this.recentNormalRangeMax,
     required this.recentMedian,
+    required this.recentStdDev,
+    required this.thirtyDayStdDev,
     required this.confidenceLevel,
     this.firstDataDate,
     this.lastDataDate,
+    required this.weeklyMin,
+    required this.weeklyMax,
+    required this.weeklyAvg,
+    required this.pricePositionInWeeklyRange,
+    required this.weeklyVolatility,
+    required this.highestPriceYear,
+    required this.lowestPriceYear,
+    required this.seasonalAverages,
   });
 }
 
@@ -159,28 +181,53 @@ class PriceAnalyticsService {
     return "$startYear-${endYear.toString().substring(2)}";
   }
 
-  /// Identifies Volatility and Risk
+  /// Identifies Volatility and Risk using the last 30 unique auction days
   Map<String, dynamic> analyzeRisk(List<AuctionData> data) {
     if (data.length < 2) return {'level': 'Unknown', 'message': 'Not enough data'};
     
-    // Group by date for volatility check
-    Map<String, double> daily = {};
+    // Group by date for volatility check (already sorted descending)
+    Map<String, double> dailyMap = {};
     for (var a in data) {
       final key = "${a.date.year}-${a.date.month}-${a.date.day}";
-      daily[key] = (daily[key] ?? 0) + a.avgPrice; // Simplification: just sum
+      // Use average price if multiple auctions on same day
+      if (!dailyMap.containsKey(key)) {
+        final sameDay = data.where((d) => "${d.date.year}-${d.date.month}-${d.date.day}" == key).toList();
+        final avg = sameDay.map((e) => e.avgPrice).reduce((a, b) => a + b) / sameDay.length;
+        dailyMap[key] = avg;
+      }
+      if (dailyMap.length >= 30) break; // Only look at last 30 unique auction days
     }
     
-    final sortedDailyPrices = daily.values.toList();
+    // Newest is at index 0 because dailyMap was built from descending data
+    final sortedDailyPrices = dailyMap.values.toList(); 
     
+    // Total Change (Variability): (Newest - Oldest) / Oldest * 100
+    // Standard percentage change where price increase = positive %
+    double netChange = 0.0;
+    if (sortedDailyPrices.length >= 2) {
+      final newest = sortedDailyPrices.first;
+      final oldest = sortedDailyPrices.last;
+      netChange = ((newest - oldest) / oldest) * 100;
+    }
+
     List<double> dailyChanges = [];
-    for (int i = 1; i < sortedDailyPrices.length; i++) {
-      double change = ((sortedDailyPrices[i] - sortedDailyPrices[i-1]) / sortedDailyPrices[i-1]).abs() * 100;
+    // Calculate daily swings (volatility) - use abs for movement speed
+    for (int i = 0; i < sortedDailyPrices.length - 1; i++) {
+      double change = ((sortedDailyPrices[i] - sortedDailyPrices[i+1]) / sortedDailyPrices[i+1]).abs() * 100;
       dailyChanges.add(change);
     }
     
     double avgDailyChange = dailyChanges.isEmpty 
         ? 0.0 
         : dailyChanges.reduce((a, b) => a + b) / dailyChanges.length;
+
+    // 30-Day Stability (Standard Deviation)
+    double thirtyDayStdDev = 0.0;
+    if (sortedDailyPrices.length >= 2) {
+      double mean = sortedDailyPrices.reduce((a, b) => a + b) / sortedDailyPrices.length;
+      double variance = sortedDailyPrices.map((x) => pow(x - mean, 2)).reduce((a, b) => a + b) / sortedDailyPrices.length;
+      thirtyDayStdDev = sqrt(variance);
+    }
     
     String riskLevel = "Low";
     String riskMessage = "Market is very stable. Good time for slow decisions.";
@@ -197,6 +244,8 @@ class PriceAnalyticsService {
       'level': riskLevel,
       'message': riskMessage,
       'volatility': avgDailyChange,
+      'netChange': netChange,
+      'stdDev': thirtyDayStdDev,
     };
   }
 
@@ -212,6 +261,7 @@ class PriceAnalyticsService {
         recentArrivals: const [],
         stats: {},
         volatility: 0.0,
+        thirtyDayChange: 0.0,
         vsLastYear: 0.0,
         vsFiveYearAvg: 0.0,
         vsLongTermAvg: 0.0,
@@ -224,7 +274,17 @@ class PriceAnalyticsService {
         recentNormalRangeMin: 0.0,
         recentNormalRangeMax: 0.0,
         recentMedian: 0.0,
+        recentStdDev: 0.0,
+        thirtyDayStdDev: 0.0,
         confidenceLevel: 'low',
+        weeklyMin: 0.0,
+        weeklyMax: 0.0,
+        weeklyAvg: 0.0,
+        pricePositionInWeeklyRange: 0.0,
+        weeklyVolatility: 0.0,
+        highestPriceYear: 0,
+        lowestPriceYear: 0,
+        seasonalAverages: const [],
       );
     }
 
@@ -233,6 +293,7 @@ class PriceAnalyticsService {
     // Latest data
     final latest = data.first;
     final currentPrice = latest.avgPrice;
+    stats['current'] = currentPrice;
     final longTermAvg = stats['mean'] ?? 0.0;
 
     // Trend (Compare current vs 30 day avg)
@@ -300,10 +361,38 @@ class PriceAnalyticsService {
     final lastWeekPrices = data.where((p) => p.date.isAfter(lastWeekStart) && p.date.isBefore(thisWeekStart)).toList();
 
     double weeklyMomentumValue = 0.0;
+    double weeklyMin = currentPrice;
+    double weeklyMax = currentPrice;
+    double weeklyAvg = currentPrice;
+    double pricePosition = 0.5;
+    double weeklyVol = 0.0;
+
+    if (thisWeekPrices.isNotEmpty) {
+      final prices = thisWeekPrices.map((p) => p.avgPrice).toList();
+      weeklyMin = prices.reduce(min);
+      weeklyMax = prices.reduce(max);
+      weeklyAvg = prices.reduce((a, b) => a + b) / prices.length;
+      
+      if (weeklyMax > weeklyMin) {
+        pricePosition = (currentPrice - weeklyMin) / (weeklyMax - weeklyMin);
+      } else {
+        pricePosition = 0.5;
+      }
+
+      // Weekly Volatility (avg daily change within this week)
+      if (thisWeekPrices.length > 1) {
+        List<double> changes = [];
+        for (int i = 1; i < thisWeekPrices.length; i++) {
+          double c = ((thisWeekPrices[i].avgPrice - thisWeekPrices[i - 1].avgPrice) / thisWeekPrices[i - 1].avgPrice).abs() * 100;
+          changes.add(c);
+        }
+        weeklyVol = changes.reduce((a, b) => a + b) / changes.length;
+      }
+    }
+
     if (thisWeekPrices.isNotEmpty && lastWeekPrices.isNotEmpty) {
-      final thisWeekAvg = thisWeekPrices.map((p) => p.avgPrice).reduce((a, b) => a + b) / thisWeekPrices.length;
       final lastWeekAvg = lastWeekPrices.map((p) => p.avgPrice).reduce((a, b) => a + b) / lastWeekPrices.length;
-      weeklyMomentumValue = ((thisWeekAvg - lastWeekAvg) / lastWeekAvg) * 100;
+      weeklyMomentumValue = ((weeklyAvg - lastWeekAvg) / lastWeekAvg) * 100;
     }
 
     // 5. Recent Arrivals (last 7 data points)
@@ -364,6 +453,38 @@ class PriceAnalyticsService {
 
     final int dataYearCount = ((data.first.date.difference(data.last.date).inDays).abs() / 365.25).ceil();
 
+    // Find Years of Extremes
+    int highestYear = 0;
+    int lowestYear = 0;
+    if (data.isNotEmpty) {
+      AuctionData maxAuction = data.first;
+      AuctionData minAuction = data.first;
+      for (var auction in data) {
+        if (auction.avgPrice > maxAuction.avgPrice) maxAuction = auction;
+        if (auction.avgPrice < minAuction.avgPrice) minAuction = auction;
+      }
+      highestYear = maxAuction.date.year;
+      lowestYear = minAuction.date.year;
+    }
+
+    // 7. Calculate Seasonal Averages (Last 3 Seasons)
+    Map<String, List<double>> seasonGroups = {};
+    for (var auction in data) {
+      final label = getSeasonLabel(auction.date);
+      seasonGroups.putIfAbsent(label, () => []).add(auction.avgPrice);
+    }
+
+    final sortedSeasons = seasonGroups.keys.toList()..sort();
+    final last3Seasons = sortedSeasons.length > 3 
+        ? sortedSeasons.sublist(sortedSeasons.length - 3) 
+        : sortedSeasons;
+
+    final seasonalAverages = last3Seasons.map((label) {
+      final prices = seasonGroups[label]!;
+      final avg = prices.reduce((a, b) => a + b) / prices.length;
+      return MapEntry(label, avg);
+    }).toList();
+
     return MarketInsights(
       season: getSeasonLabel(latest.date),
       status: status,
@@ -373,6 +494,8 @@ class PriceAnalyticsService {
       recentArrivals: recentArrivals,
       stats: stats,
       volatility: volatility,
+      thirtyDayChange: risk['netChange'] ?? 0.0,
+      thirtyDayStdDev: risk['stdDev'] ?? 0.0,
       vsLastYear: vsLastYear,
       vsFiveYearAvg: vsFiveYearAvg,
       vsLongTermAvg: vsLongTermAvg,
@@ -385,9 +508,18 @@ class PriceAnalyticsService {
       recentNormalRangeMin: recentNormalRangeMin,
       recentNormalRangeMax: recentNormalRangeMax,
       recentMedian: recentMedian,
+      recentStdDev: recentStdDev,
       confidenceLevel: dataYearCount > 7 ? 'high' : (dataYearCount > 3 ? 'medium' : 'low'),
       firstDataDate: data.last.date,
       lastDataDate: data.first.date,
+      weeklyMin: weeklyMin,
+      weeklyMax: weeklyMax,
+      weeklyAvg: weeklyAvg,
+      pricePositionInWeeklyRange: pricePosition,
+      weeklyVolatility: weeklyVol,
+      highestPriceYear: highestYear,
+      lowestPriceYear: lowestYear,
+      seasonalAverages: seasonalAverages,
     );
   }
 }

@@ -20,8 +20,9 @@ class AppLocalizations {
       'latest_auctions': 'Latest Auctions',
       'avg_price': 'Avg Price',
       'qty_sold': 'Qty Sold',
-      'volatility_help_title': '30-Day Volatility',
-      'volatility_help_desc': 'Measures how much prices have fluctuated in the last month. High volatility (>3%) indicates unpredictable prices and higher risk.',
+      'volatility_30_day': '30-Day Variability',
+      'volatility_help_title': '30-Day Variability',
+      'volatility_help_desc': 'Shows the net percentage change in price over the last 30 auction days. Helps you see the monthly trend. High volatility (>3%) indicates unpredictable prices and higher risk.',
       'stability_help_title': 'Stability Level',
       'stability_help_desc': 'Shows the typical expected price movement (standard deviation). A lower value means prices are more predictable.',
       'typical_price_help_title': 'Typical Price (Median)',
@@ -145,6 +146,8 @@ class AppLocalizations {
       'sma_14_label': 'SMA (14)',
       'key_statistics': 'Key Statistics',
       'price_level_title': 'Price Level',
+      'price_level_help_title': 'Price Level',
+      'price_level_help_desc': 'Shows the average price trend across the last three harvest seasons to help you identify long-term market value.',
       'historical_label': 'Historical',
       'typical_price_label': 'Typical Price (Median)',
       'normal_range_label': 'Normal Range',
@@ -178,6 +181,19 @@ class AppLocalizations {
       'location': 'Location',
       'save_profile': 'Save Profile',
       'export_data': 'Export to Excel',
+      'weekly_market_snapshot': 'Weekly Market Snapshot',
+      'this_week': 'This week:',
+      'up_from_last_week': 'Up from last week',
+      'down_from_last_week': 'Down from last week',
+      'avg_price_label': 'Avg Price',
+      'today_price_label': 'Today:',
+      'trading_near_high': 'Prices are trading near the weekly high',
+      'trading_near_low': 'Prices are trading near the weekly low',
+      'trading_near_mid': 'Prices are trading near the weekly middle',
+      'weekly_volatility_label': 'Weekly volatility:',
+      'volatility_low': 'LOW',
+      'volatility_moderate': 'MODERATE',
+      'volatility_high': 'HIGH',
       'export_success': 'Excel file exported successfully!',
       'select_language': 'Select Language',
       'email': 'Email Address',
@@ -193,7 +209,7 @@ class AppLocalizations {
       'confidence_medium': 'Confidence: Medium',
       'confidence_low': 'Confidence: Low',
       'why_label': 'Why',
-      'decision_summary': 'Decision Summary:',
+      'decision_summary': 'Market Verdict:',
       'sell': 'Sell',
       'hold': 'Hold',
       'wait_label': 'Wait',
@@ -202,6 +218,8 @@ class AppLocalizations {
       'risk': 'Risk',
       'typical_movement': 'Typical movement:',
       'price_moves_context': 'Price moves ± {value} from typical price',
+      'full_history_label': 'Full {count} Years History',
+      'average_disclaimer': 'Note: Prices shown are daily auction averages, not the daily maximum.',
     },
     'ml': {
       'app_title': 'ഏലക്കായ അനലിറ്റിക്സ്',
@@ -213,8 +231,9 @@ class AppLocalizations {
       'avg_price': 'ശരാശരി വില',
       'qty_sold': 'വിൽപ്പന അളവ്',
       'total_qty': 'ആകെ അളവ്',
-      'volatility_help_title': '30-ദിവസത്തെ ഉത്കണ്ഠ (Volatility)',
-      'volatility_help_desc': 'കഴിഞ്ഞ മാസത്തെ വിലവർദ്ധനവിലെ മാറ്റങ്ങളെ ഇത് കാണിക്കുന്നു. ഉയർന്ന ശതമാനം (>3%) വിലയിൽ വലിയ മാറ്റങ്ങൾ ഉണ്ടാകാമെന്ന് സൂചിപ്പിക്കുന്നു.',
+      'volatility_30_day': '30-ദിവസത്തെ വ്യതിയാനം (Variability)',
+      'volatility_help_title': '30-ദിവസത്തെ വ്യതിയാനം',
+      'volatility_help_desc': 'കഴിഞ്ഞ 30 ലേല ദിവസങ്ങളിൽ വിലയിൽ ഉണ്ടായിട്ടുള്ള മൊത്തം ശതമാനം മാറ്റം ഇത് കാണിക്കുന്നു. വിപണിയുടെ പ്രതിമാസ പ്രവണത മനസ്സിലാക്കാൻ ഇത് സഹായിക്കുന്നു. ഉയർന്ന വ്യതിയാനം (>3%) വിലകൾ പ്രവചനാതീതമാണെന്നും ഉയർന്ന അപകടസാധ്യതയുണ്ടെന്നും സൂചിപ്പിക്കുന്നു.',
       'stability_help_title': 'സ്ഥിരതയുടെ അളവ് (Stability)',
       'stability_help_desc': 'വിലയിൽ വരാവുന്ന സാധാരണ മാറ്റങ്ങളെ ഇത് കാണിക്കുന്നു. കുറഞ്ഞ മൂല്യം എന്നാൽ വില കൂടുതൽ സ്ഥിരതയുള്ളതാണെന്ന് അർത്ഥമാക്കുന്നു.',
       'typical_price_help_title': 'സാധാരണ വില (മീഡിയൻ)',
@@ -337,6 +356,8 @@ class AppLocalizations {
       'sma_14_label': 'ശരാശരി (14)',
       'key_statistics': 'പ്രധാന വിവരങ്ങൾ',
       'price_level_title': 'വില നിലവാരം',
+      'price_level_help_title': 'വില നിലവാരം',
+      'price_level_help_desc': 'കഴിഞ്ഞ മൂന്ന് വിളവെടുപ്പ് സീസണുകളിലെ ശരാശരി വിലയിലെ മാറ്റങ്ങൾ കാണിക്കുന്നു.',
       'historical_label': 'ചരിത്രപരം',
       'typical_price_label': 'സാധാരണ വില (മീഡിയൻ)',
       'normal_range_label': 'സാധാരണ പരിധി',
@@ -375,6 +396,19 @@ class AppLocalizations {
       'email': 'ഇമെയിൽ വിലാസം',
       'phone_number': 'ഫോൺ നമ്പർ',
       'profile_privacy_note': 'നിങ്ങളുടെ വിവരങ്ങൾ ഈ ഉപകരണത്തിൽ മാത്രമാണ് സൂക്ഷിക്കുന്നത്.',
+      'weekly_market_snapshot': 'വാരഫലം (Weekly Snapshot)',
+      'this_week': 'ഈ ആഴ്ച:',
+      'up_from_last_week': 'കഴിഞ്ഞ ആഴ്ചയേക്കാൾ കൂടുതൽ',
+      'down_from_last_week': 'കഴിഞ്ഞ ആഴ്ചയേക്കാൾ കുറവ്',
+      'avg_price_label': 'ശരാശരി വില',
+      'today_price_label': 'ഇന്ന്:',
+      'trading_near_high': 'വിലകൾ ആഴ്ചയിലെ ഏറ്റവും ഉയർന്ന നിലയിലാണ്',
+      'trading_near_low': 'വിലകൾ ആഴ്ചയിലെ ഏറ്റവും താഴ്ന്ന നിലയിലാണ്',
+      'trading_near_mid': 'വിലകൾ ആഴ്ചയിലെ മധ്യനിലയിലാണ്',
+      'weekly_volatility_label': 'പ്രതിവാര വ്യതിയാനം:',
+      'volatility_low': 'കുറവ്',
+      'volatility_moderate': 'മിതമായത്',
+      'volatility_high': 'കൂടുതൽ',
       'initial_sync_pending': 'ഇന്നത്തെ പുതിയ വിവരങ്ങൾ ശേഖരിക്കുന്നു...',
       'initial_sync_hint': 'നിങ്ങൾ ഇപ്പോൾ കാണുന്നത് പഴയ വിവരങ്ങളാണ്. പുതിയ വിവരങ്ങൾക്കായി അല്പസമയം കാത്തിരിക്കുകയോ റിഫ്രഷ് ബട്ടൺ അമർത്തുകയോ ചെയ്യുക.',
       'short_term': 'ഹ്രസ്വകാല',
@@ -385,7 +419,7 @@ class AppLocalizations {
       'confidence_medium': 'വിശ്വാസ്യത: ഇടത്തരം',
       'confidence_low': 'വിശ്വാസ്യത: കുറവ്',
       'why_label': 'എന്തുകൊണ്ട്',
-      'decision_summary': 'തീരുമാന സംഗ്രഹം:',
+      'decision_summary': 'വിപണി വിധി:', // Market Verdict
       'sell': 'വില്ക്കുക',
       'hold': 'കാത്തിരിക്കുക',
       'wait_label': 'കാത്തിരിക്കുക',
@@ -394,6 +428,8 @@ class AppLocalizations {
       'risk': 'സാദ്ധ്യത',
       'typical_movement': 'സാധാരണ വ്യതിയാനം:',
       'price_moves_context': 'സാധാരണ വിലയിൽ നിന്ന് ± {value} മാറ്റം വരാം',
+      'full_history_label': '{count} വർഷത്തെ ചരിത്രം',
+      'average_disclaimer': 'ശ്രദ്ധിക്കുക: ഇവിടെ നൽകിയിരിക്കുന്ന വിലകൾ ലേല ദിവസത്തെ ശരാശരി വിലകളാണ്, പരമാവധി വിലയല്ല.',
     },
     'ta': {
       'app_title': 'ஏலக்காய் பகுப்பாய்வு',
@@ -404,8 +440,9 @@ class AppLocalizations {
       'latest_auctions': 'சமீபத்திய ஏலம்',
       'avg_price': 'சராசரி விலை',
       'qty_sold': 'விற்பனை அளவு',
-      'volatility_help_title': '30-நாள் ஏற்ற இறக்கம் (Volatility)',
-      'volatility_help_desc': 'கடந்த ஒரு மாதத்தில் விலை எவ்வளவு மாறியுள்ளது என்பதை இது காட்டுகிறது. அதிக ஏற்ற இறக்கம் (>3%) இருந்தால் விலை கணிக்க இயலாது என்று அர்த்தம்.',
+      'volatility_30_day': '30-நாள் மாறுபாடு (Variability)',
+      'volatility_help_title': '30-நாள் மாறுபாடு',
+      'volatility_help_desc': 'கடந்த 30 ஏல நாட்களில் விலையில் ஏற்பட்டுள்ள மொத்த மாற்றத்தின் சதவீதத்தை இது காட்டுகிறது. மாதாந்திர போக்கை அறிய இது உதவும். அதிக ஏற்ற இறக்கம் (>3%) இருந்தால் விலை கணிக்க இயலாது என்று அர்த்தம்.',
       'stability_help_title': 'நிலைப்புத்தன்மை (Stability)',
       'stability_help_desc': 'விலையில் வரக்கூடிய சாதாரண மாற்றங்களை இது காட்டுகிறது. குறைந்த மதிப்பு என்றால் விலை நிலையாக இருக்கிறது என்று அர்த்தம்.',
       'typical_price_help_title': 'சாதாரண விலை (மீடியன்)',
@@ -529,6 +566,8 @@ class AppLocalizations {
       'sma_14_label': 'சராசரி (14)',
       'key_statistics': 'முக்கிய புள்ளிவிவரங்கள்',
       'price_level_title': 'விலை நிலை',
+      'price_level_help_title': 'விலை நிலை',
+      'price_level_help_desc': 'கடந்த மூன்று அறுவடை காலங்களில் சராசரி விலை மாற்றங்களைக் காட்டுகிறது.',
       'historical_label': 'வரலாற்று',
       'typical_price_label': 'சாதாரண விலை (மீடியன்)',
       'normal_range_label': 'சாதாரண வரம்பு',
@@ -562,6 +601,19 @@ class AppLocalizations {
       'location': 'இடம்',
       'save_profile': 'சுயவிவரத்தைச் சேமிக்கவும்',
       'export_data': 'எக்செல் ஆக மாற்றவும்',
+      'weekly_market_snapshot': 'வாராந்திர சந்தை நிலவரம்',
+      'this_week': 'இந்த வாரம்:',
+      'up_from_last_week': 'கடந்த வாரத்தை விட அதிகம்',
+      'down_from_last_week': 'கடந்த வாரத்தை விட குறைவு',
+      'avg_price_label': 'சராசரி விலை',
+      'today_price_label': 'இன்று:',
+      'trading_near_high': 'விலை வாரத்தின் அதிகபட்ச அளவை நெருங்கி உள்ளது',
+      'trading_near_low': 'விலை வாரத்தின் குறைந்தபட்ச அளவை நெருங்கி உள்ளது',
+      'trading_near_mid': 'விலை வாரத்தின் இடைப்பட்ட அளவில் உள்ளது',
+      'weekly_volatility_label': 'வாராந்திர கணக்கீடு:',
+      'volatility_low': 'குறைவு',
+      'volatility_moderate': 'மிதமானது',
+      'volatility_high': 'அதிகம்',
       'export_success': 'எக்செல் கோப்பு வெற்றிகரமாக உருவாக்கப்பட்டது!',
       'select_language': 'மொழியைத் தேர்ந்தெடுக்கவும்',
       'email': 'மின்னஞ்சல் முகவரி',
@@ -577,7 +629,7 @@ class AppLocalizations {
       'confidence_medium': 'நம்பிக்கை: மிதமான',
       'confidence_low': 'நம்பிக்கை: குறைவு',
       'why_label': 'ஏன்',
-      'decision_summary': 'முடிவு சுருக்கம்:',
+      'decision_summary': 'சந்தை தீர்ப்பு:', // Market Verdict
       'sell': 'விற்க',
       'hold': 'காத்திருக்க',
       'wait_label': 'காத்திருக்க',
@@ -586,6 +638,8 @@ class AppLocalizations {
       'risk': 'அபாயம்',
       'typical_movement': 'சாதாரண விலை மாற்றம்:',
       'price_moves_context': 'சாதாரண விலையிலிருந்து ± {value} மாற்றம் வரும்',
+      'full_history_label': '{count} வருட வரலாறு',
+      'average_disclaimer': 'குறிப்பு: இங்கே காட்டப்பட்டுள்ள விலைகள் ஏல நாள் சராசரி விலைகளே தவிர, அதிகபட்ச விலை அல்ல.',
     },
   };
 
@@ -759,12 +813,28 @@ class AppLocalizations {
   String get typicalPriceHelpTitle => translate('typical_price_help_title');
   String get typicalPriceHelpDesc => translate('typical_price_help_desc');
   String get normalRangeHelpTitle => translate('normal_range_help_title');
+  String get priceLevelHelpTitle => translate('price_level_help_title');
+  String get priceLevelHelpDesc => translate('price_level_help_desc');
   String get normalRangeHelpDesc => translate('normal_range_help_desc');
   String get highestSeenHelpTitle => translate('highest_seen_help_title');
   String get highestSeenHelpDesc => translate('highest_seen_help_desc');
   String get lowestSeenHelpTitle => translate('lowest_seen_help_title');
   String get lowestSeenHelpDesc => translate('lowest_seen_help_desc');
   String get gotIt => translate('got_it');
+
+  String get weeklyMarketSnapshot => translate('weekly_market_snapshot');
+  String get thisWeek => translate('this_week');
+  String get upFromLastWeek => translate('up_from_last_week');
+  String get downFromLastWeek => translate('down_from_last_week');
+  String get avgPriceLabel => translate('avg_price_label');
+  String get todayPriceLabel => translate('today_price_label');
+  String get tradingNearHigh => translate('trading_near_high');
+  String get tradingNearLow => translate('trading_near_low');
+  String get tradingNearMid => translate('trading_near_mid');
+  String get weeklyVolatilityLabel => translate('weekly_volatility_label');
+  String get volatilityLow => translate('volatility_low');
+  String get volatilityModerate => translate('volatility_moderate');
+  String get volatilityHigh => translate('volatility_high');
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
