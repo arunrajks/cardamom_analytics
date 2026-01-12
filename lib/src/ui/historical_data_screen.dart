@@ -416,31 +416,33 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
       isIncrease = percentageChange >= 0;
     }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            "₹${NumberFormat("#,##0").format(auction.avgPrice)}/kg",
-                            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
+    return GestureDetector(
+      onTap: () => _showAuctionDetails(auction, l10n),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              "₹${NumberFormat("#,##0").format(auction.avgPrice)}/kg",
+                              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                            ),
                           if (previous != null) ...[
                             const SizedBox(width: 8),
                             Icon(isIncrease ? Icons.arrow_upward : Icons.arrow_downward, size: 14, color: isIncrease ? Colors.green : Colors.red),
@@ -480,8 +482,119 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                 ),
               ],
             ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAuctionDetails(AuctionData auction, AppLocalizations l10n) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        contentPadding: EdgeInsets.zero,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: const BoxDecoration(
+                color: ThemeConstants.primaryGreen,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Row(
+                children: [
+                   const Icon(Icons.analytics_outlined, color: Colors.white, size: 28),
+                   const SizedBox(width: 12),
+                   Expanded(
+                     child: Text(
+                       l10n.auctionDetails, 
+                       style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)
+                     ),
+                   ),
+                   GestureDetector(
+                     onTap: () => Navigator.pop(context),
+                     child: const Icon(Icons.close, color: Colors.white, size: 24),
+                   ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                children: [
+                  _buildDetailRow(l10n.avgPrice, "₹${NumberFormat("#,##0").format(auction.avgPrice)}/kg", Icons.trending_up, isBold: true),
+                  _buildDetailRow(l10n.translate('max_price'), "₹${NumberFormat("#,##0").format(auction.maxPrice)}/kg", Icons.stars, color: ThemeConstants.headingOrange),
+                  const Divider(height: 32),
+                  _buildDetailRow(l10n.totalQty, "${NumberFormat("#,###").format(auction.quantity)} kg", Icons.shopping_basket_outlined),
+                  if (auction.quantityArrived != null) 
+                    _buildDetailRow(l10n.qtyArrived, "${NumberFormat("#,###").format(auction.quantityArrived)} kg", Icons.warehouse_outlined),
+                  if (auction.lots != null) 
+                    _buildDetailRow(l10n.lots, "${auction.lots}", Icons.inventory_2_outlined),
+                  const Divider(height: 32),
+                  _buildDetailRow(l10n.latestAuctions, auction.auctioneer, Icons.business),
+                  _buildDetailRow(l10n.translate('date'), DateFormat('dd MMM yyyy').format(auction.date), Icons.calendar_today),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 24, left: 24, right: 24),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ThemeConstants.primaryGreen,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.all(16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  child: Text(l10n.gotIt, style: const TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, IconData icon, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Icon(icon, size: 20, color: color ?? ThemeConstants.primaryGreen.withOpacity(0.7)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label, 
+              style: GoogleFonts.outfit(color: Colors.grey.shade600, fontSize: 13, height: 1.2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: Text(
+              value, 
+              textAlign: TextAlign.end,
+              style: GoogleFonts.outfit(
+                fontSize: 14, 
+                fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+                color: color ?? ThemeConstants.textDark,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -496,36 +609,78 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     List<FlSpot> lowerSpots = [];
     
     final isPrice = _plotType != HistoricalPlotType.quantity;
+    final useMax = _plotType == HistoricalPlotType.maxPrice;
     
-    // Only calculate technical analysis for price-based plots
-    final List<PricePerformancePoint> performance = isPrice 
-        ? PriceAnalyticsService().getPricePerformance(chronData, period: 7) 
-        : [];
+    // Create aggregated chronData for tooltips (needs to match chart points)
+    List<AuctionData> aggregatedChronData = [];
+    List<PricePerformancePoint> performance = [];
     
-    if (performance.isNotEmpty && isPrice) {
-      for (int i = 0; i < performance.length; i++) {
-        final p = performance[i];
-        double value;
-        switch(_plotType) {
-          case HistoricalPlotType.maxPrice: value = chronData[chronData.length - performance.length + i].maxPrice; break;
-          default: value = p.actual;
-        }
-        actualSpots.add(FlSpot(i.toDouble(), value));
-        smaSpots.add(FlSpot(i.toDouble(), p.sma));
-        upperSpots.add(FlSpot(i.toDouble(), p.upperBand));
-        lowerSpots.add(FlSpot(i.toDouble(), p.lowerBand));
+    if (isPrice) {
+      performance = PriceAnalyticsService().getPricePerformance(chronData, period: 7, useMaxPrice: useMax);
+      actualSpots = performance.map((p) => FlSpot(performance.indexOf(p).toDouble(), p.actual)).toList();
+      smaSpots = performance.where((p) => p.sma > 0).map((p) => FlSpot(performance.indexOf(p).toDouble(), p.sma)).toList();
+      upperSpots = performance.where((p) => p.upperBand > 0).map((p) => FlSpot(performance.indexOf(p).toDouble(), p.upperBand)).toList();
+      lowerSpots = performance.where((p) => p.lowerBand > 0).map((p) => FlSpot(performance.indexOf(p).toDouble(), p.lowerBand)).toList();
+      
+      // Reconstruct AuctionData for tooltips to reflect daily aggregation
+      for (var p in performance) {
+        aggregatedChronData.add(AuctionData(
+          date: p.date, 
+          avgPrice: useMax ? 0 : p.actual, 
+          maxPrice: useMax ? p.actual : 0, 
+          auctioneer: "Daily Aggregated", 
+          quantity: 0
+        ));
       }
     } else {
-      for (int i = 0; i < chronData.length; i++) {
-        double value;
-        switch(_plotType) {
-          case HistoricalPlotType.maxPrice: value = chronData[i].maxPrice; break;
-          case HistoricalPlotType.quantity: value = chronData[i].quantity; break;
-          default: value = chronData[i].avgPrice;
+      actualSpots = PriceAnalyticsService().getDailyQuantitySpots(chronData);
+      // Construct AuctionData for quantity tooltips
+      Map<String, double> dailyQty = {};
+      List<DateTime> dates = [];
+      for (var a in chronData) {
+        final key = "${a.date.year}-${a.date.month}-${a.date.day}";
+        if (!dailyQty.containsKey(key)) {
+          final parts = key.split("-");
+          dates.add(DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2])));
         }
-        actualSpots.add(FlSpot(i.toDouble(), value));
+        dailyQty[key] = (dailyQty[key] ?? 0.0) + a.quantity;
+      }
+      for (var dt in dates) {
+        final key = "${dt.year}-${dt.month}-${dt.day}";
+        aggregatedChronData.add(AuctionData(
+          date: dt, 
+          avgPrice: 0, 
+          maxPrice: 0, 
+          auctioneer: "Daily Total", 
+          quantity: dailyQty[key]!
+        ));
       }
     }
+
+    // Use aggregatedChronData for tooltips instead of chronData
+    final tooltipData = aggregatedChronData;
+
+    // Determine Y-axis range to prevent clipping
+    double chartMaxY = 0;
+    double chartMinY = double.infinity;
+
+    for (var s in actualSpots) {
+      if (s.y > chartMaxY) chartMaxY = s.y;
+      if (s.y < chartMinY) chartMinY = s.y;
+    }
+    for (var s in upperSpots) {
+      if (s.y > chartMaxY) chartMaxY = s.y;
+    }
+    for (var s in lowerSpots) {
+      if (s.y < chartMinY && s.y > 0) chartMinY = s.y;
+    }
+    
+    if (chartMinY == double.infinity || chartMinY < 0) chartMinY = 0;
+    if (chartMaxY == 0) chartMaxY = 1000; // Fallback
+
+    // Add safe buffer
+    chartMaxY = chartMaxY * 1.05;
+    chartMinY = chartMinY * 0.95;
 
     final double totalValue = data.fold<double>(0, (sum, e) {
       switch(_plotType) {
@@ -540,6 +695,8 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
 
     return LineChart(
       LineChartData(
+        minY: chartMinY,
+        maxY: chartMaxY,
         lineTouchData: LineTouchData(
           enabled: true,
           touchTooltipData: LineTouchTooltipData(
@@ -557,10 +714,16 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                 // Return tooltip only for the main "Actual Price" bar
                 if (spot.barIndex != totalBars - 1) return null; 
                 
-                final date = chronData[spot.x.toInt()].date;
+                final index = spot.x.toInt();
+                if (index < 0 || index >= tooltipData.length) return null;
+                
+                final point = tooltipData[index];
+                final date = point.date;
+                final value = _plotType == HistoricalPlotType.quantity ? point.quantity : spot.y;
+                
                 final valueString = _plotType == HistoricalPlotType.quantity 
-                  ? "${NumberFormat("#,###").format(spot.y)} $unit" 
-                  : "$unit${NumberFormat("#,###").format(spot.y)}";
+                  ? "${NumberFormat("#,###").format(value)} $unit" 
+                  : "$unit${NumberFormat("#,###").format(value)}";
                 
                 return LineTooltipItem(
                   "${DateFormat('dd MMM yyyy').format(date)}\n$valueString",
@@ -577,7 +740,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
         gridData: FlGridData(
           show: true,
           drawVerticalLine: false,
-          horizontalInterval: 500,
+          horizontalInterval: (chartMaxY - chartMinY) / 5 > 0 ? (chartMaxY - chartMinY) / 5 : 500,
           getDrawingHorizontalLine: (value) => FlLine(color: Colors.grey.shade100, strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
@@ -692,12 +855,15 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
       final syncService = ref.read(syncServiceProvider);
       int count = await syncService.syncNewData(maxPages: pages);
       
-      setState(() {
-         _isImporting = false;
-         _statusMessage = l10n.syncComplete(count);
-      });
+      if (mounted) {
+        setState(() {
+           _isImporting = false;
+           _statusMessage = l10n.syncComplete(count);
+        });
+      }
       
-      ref.invalidate(historicalPricesProvider);
+      ref.invalidate(historicalPricesProvider(fromDate: _fromDate, toDate: _toDate));
+      ref.invalidate(lastSyncTimeProvider);
       
     } catch (e) {
       setState(() {

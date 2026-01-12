@@ -116,23 +116,36 @@ class SyncService {
     return null;
   }
 
-  /// Checks for new data and returns the latest [AuctionData] if it's newer than [lastKnownDate]
-  Future<AuctionData?> checkForNewData(DateTime? lastKnownDate) async {
+  /// Checks for new data and returns a list of [AuctionData] newer than [lastKnownDate]
+  /// or not present in the database.
+  Future<List<AuctionData>> checkForNewData(DateTime? lastKnownDate) async {
     try {
       final List<AuctionData> latestPage = await _apiService.fetchAuctionsByPage(1);
-      if (latestPage.isEmpty) return null;
+      if (latestPage.isEmpty) return [];
 
-      // Sort by date descending (should already be sorted, but to be sure)
-      latestPage.sort((a, b) => b.date.compareTo(a.date));
-      final latest = latestPage.first;
+      // Get existing keys to avoid double notification
+      final existingKeys = await _dbHelper.getAllAuctionKeys();
 
-      if (lastKnownDate == null || latest.date.isAfter(lastKnownDate)) {
-        return latest;
-      }
-      return null;
+      // Find records that are either newer than lastKnownDate 
+      // OR have the same date but differ in auctioneer and are not in DB.
+      final newAuctions = latestPage.where((auction) {
+        final key = "${AppDates.db.format(auction.date)}_${auction.auctioneer.toUpperCase()}";
+        
+        bool isNewer = lastKnownDate == null || auction.date.isAfter(lastKnownDate);
+        bool isTodayButNew = lastKnownDate != null && 
+                             auction.date.isAtSameMomentAs(lastKnownDate) && 
+                             !existingKeys.contains(key);
+                             
+        return isNewer || isTodayButNew;
+      }).toList();
+
+      // Sort chronological so notifications appear in order
+      newAuctions.sort((a, b) => a.date.compareTo(b.date));
+      
+      return newAuctions;
     } catch (e) {
       debugPrint("Check for new data error: $e");
-      return null;
+      return [];
     }
   }
 }

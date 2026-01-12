@@ -11,7 +11,9 @@ class ThemeConstants {
   
   static const Color creamApp = Color(0xFFF9F6F0);       // Main Background
   static const Color textDark = Color(0xFF002117);       // Headings, Page Titles
-  static const Color headingOrange = Color(0xFFE65100);  // Alerts, Warnings, Rare Tags ONLY
+  static const Color headingOrange = Color(0xFFD35400);  // Desaturated Base (Pumpkin)
+  static const Color sectionOrange = Color(0xFFA35B3F);  // Muted, Earthy Orange for Headers
+  static const Color actionOrange = Color(0xFFE67E22);   // Brighter Action Orange (Carrot)
   
   static const Color alertRed = Color(0xFFD32F2F);       // Negative Trends
   static const Color smaGold = Color(0xFFF9A825);        // Moving Averages

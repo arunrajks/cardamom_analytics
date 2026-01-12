@@ -10,7 +10,7 @@ import 'package:cardamom_analytics/src/services/price_analytics_service.dart';
 import 'package:cardamom_analytics/src/ui/widgets/app_info_dialog.dart';
 import 'package:cardamom_analytics/src/ui/theme/theme_constants.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
-import 'package:cardamom_analytics/src/ui/profile_screen.dart';
+import 'package:cardamom_analytics/src/ui/feedback_screen.dart';
 import 'package:cardamom_analytics/src/providers/locale_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -103,13 +103,13 @@ class DashboardScreen extends ConsumerWidget {
           onPressed: () => _showLanguageSelector(context, ref),
         ),
         GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
+          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FeedbackScreen())),
           child: const Padding(
             padding: EdgeInsets.only(right: 16, left: 8),
             child: CircleAvatar(
               radius: 16,
               backgroundColor: ThemeConstants.forestGreen,
-              child: Icon(Icons.person_outline, size: 20, color: Colors.white),
+              child: Icon(Icons.chat_bubble_outline, size: 18, color: Colors.white),
             ),
           ),
         ),
@@ -170,7 +170,7 @@ class DashboardScreen extends ConsumerWidget {
           color: isSelected ? Colors.black : Colors.grey[700],
         ),
       ),
-      trailing: isSelected ? const Icon(Icons.stars, color: Colors.orange, size: 16) : null,
+      trailing: isSelected ? const Icon(Icons.stars, color: ThemeConstants.actionOrange, size: 16) : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
@@ -432,12 +432,12 @@ class DashboardScreen extends ConsumerWidget {
 
 
   Widget _buildTrendSection(BuildContext context, WidgetRef ref, List<AuctionData> prices, AppLocalizations l10n) {
-    final range = ref.watch(chartRangeProvider);
+    final rangeValue = ref.watch(chartRangeProvider);
     
     // Filter history based on range
     DateTime cutoff;
     final now = DateTime.now();
-    switch (range) {
+    switch (rangeValue) {
       case ChartRange.oneMonth:
         cutoff = now.subtract(const Duration(days: 30));
         break;
@@ -480,6 +480,25 @@ class DashboardScreen extends ConsumerWidget {
       spots.add(FlSpot(x, daily.value));
     }
 
+    // Calculate "Nice" Y-Axis Range
+    final allValues = spots.map((s) => s.y).toList();
+    double rawMin = allValues.reduce(min);
+    double rawMax = allValues.reduce(max);
+    
+    // Add 2% padding
+    rawMin = rawMin * 0.98;
+    rawMax = rawMax * 1.05; // Room for tooltips
+    
+    double priceRange = rawMax - rawMin;
+    double interval;
+    if (priceRange <= 200) interval = 50;
+    else if (priceRange <= 500) interval = 100;
+    else if (priceRange <= 1000) interval = 200;
+    else interval = 500;
+
+    double minY = (rawMin / interval).floorToDouble() * interval;
+    double maxY = (rawMax / interval).ceilToDouble() * interval;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -492,10 +511,10 @@ class DashboardScreen extends ConsumerWidget {
             ),
             Row(
               children: [
-                _buildToggle(ref, '1M', range == ChartRange.oneMonth, ChartRange.oneMonth),
-                _buildToggle(ref, '6M', range == ChartRange.sixMonths, ChartRange.sixMonths),
-                _buildToggle(ref, '1Y', range == ChartRange.oneYear, ChartRange.oneYear),
-                _buildToggle(ref, 'All', range == ChartRange.all, ChartRange.all),
+                _buildToggle(ref, '1M', rangeValue == ChartRange.oneMonth, ChartRange.oneMonth),
+                _buildToggle(ref, '6M', rangeValue == ChartRange.sixMonths, ChartRange.sixMonths),
+                _buildToggle(ref, '1Y', rangeValue == ChartRange.oneYear, ChartRange.oneYear),
+                _buildToggle(ref, 'All', rangeValue == ChartRange.all, ChartRange.all),
               ],
             )
           ],
@@ -510,12 +529,14 @@ class DashboardScreen extends ConsumerWidget {
           ),
           child: LineChart(
             LineChartData(
+              minY: minY,
+              maxY: maxY,
               gridData: FlGridData(
                 show: true,
                 drawVerticalLine: false,
-                horizontalInterval: 500,
+                horizontalInterval: interval,
                 getDrawingHorizontalLine: (value) => FlLine(
-                  color: Colors.grey.withValues(alpha: 0.1),
+                  color: Colors.grey.withValues(alpha: 0.05),
                   strokeWidth: 1,
                 ),
               ),
@@ -527,7 +548,7 @@ class DashboardScreen extends ConsumerWidget {
                   sideTitles: SideTitles(
                     showTitles: true,
                     reservedSize: 30,
-                    interval: _getBottomInterval(range),
+                    interval: _getBottomInterval(rangeValue),
                     getTitlesWidget: (val, meta) {
                       final date = DateTime.fromMillisecondsSinceEpoch(
                         (val * 1000 * 60 * 60 * 24 + firstTimestamp).toInt(),
@@ -535,8 +556,8 @@ class DashboardScreen extends ConsumerWidget {
                       return Padding(
                         padding: const EdgeInsets.only(top: 8.0),
                         child: Text(
-                          _getBottomTitle(date, range, l10n.locale.languageCode),
-                          style: const TextStyle(color: Colors.grey, fontSize: 10),
+                          _getBottomTitle(date, rangeValue, l10n.locale.languageCode),
+                          style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w600),
                         ),
                       );
                     },
@@ -545,27 +566,55 @@ class DashboardScreen extends ConsumerWidget {
                 leftTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
-                    getTitlesWidget: (val, meta) => Text(
-                      '₹${val.toInt()}',
-                      style: const TextStyle(color: Colors.grey, fontSize: 10),
+                    interval: interval,
+                    getTitlesWidget: (val, meta) => Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Text(
+                        '₹${NumberFormat("#,###").format(val.toInt())}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.bold),
+                      ),
                     ),
-                    reservedSize: 45,
+                    reservedSize: 52,
                   ),
                 ),
               ),
               borderData: FlBorderData(show: false),
+              lineTouchData: LineTouchData(
+                touchTooltipData: LineTouchTooltipData(
+                  getTooltipColor: (spot) => const Color(0xFF1E222D),
+                  fitInsideHorizontally: true,
+                  fitInsideVertically: true,
+                  getTooltipItems: (touchedSpots) {
+                    return touchedSpots.map((spot) {
+                      final date = DateTime.fromMillisecondsSinceEpoch(
+                        (spot.x * 1000 * 60 * 60 * 24 + firstTimestamp).toInt(),
+                      );
+                      return LineTooltipItem(
+                        '${DateFormat('d MMM', l10n.locale.languageCode).format(date)}\n',
+                        const TextStyle(color: Colors.white70, fontSize: 10),
+                        children: [
+                          TextSpan(
+                            text: '₹${NumberFormat("#,###").format(spot.y.toInt())}',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                        ],
+                      );
+                    }).toList();
+                  },
+                ),
+              ),
               lineBarsData: [
                 LineChartBarData(
                   spots: spots,
                   isCurved: true,
                   color: ThemeConstants.forestGreen,
-                  barWidth: 3,
+                  barWidth: 3.5,
                   dotData: const FlDotData(show: false),
                   belowBarData: BarAreaData(
                     show: true,
                     gradient: LinearGradient(
                       colors: [
-                        ThemeConstants.forestGreen.withValues(alpha: 0.2),
+                        ThemeConstants.forestGreen.withValues(alpha: 0.15),
                         ThemeConstants.forestGreen.withValues(alpha: 0.0),
                       ],
                       begin: Alignment.topCenter,
@@ -642,12 +691,33 @@ class DashboardScreen extends ConsumerWidget {
       lowerSpots.add(FlSpot(x, p.lowerBand));
     }
 
+    // Calculate "Nice" Y-Axis Range
+    final allValues = displayPoints.expand((p) => [p.actual, p.sma, p.upperBand, p.lowerBand])
+        .where((v) => v > 0).toList();
+    if (allValues.isEmpty) return const SizedBox.shrink();
+
+    double rawMin = allValues.reduce(min);
+    double rawMax = allValues.reduce(max);
+    
+    // Add 2% padding
+    rawMin = rawMin * 0.98;
+    rawMax = rawMax * 1.02;
+    
+    double range = rawMax - rawMin;
+    double interval;
+    if (range <= 200) interval = 50;
+    else if (range <= 500) interval = 100;
+    else interval = 200;
+
+    double minY = (rawMin / interval).floorToDouble() * interval;
+    double maxY = (rawMax / interval).ceilToDouble() * interval;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Icon(Icons.trending_up, color: Colors.green, size: 20),
+            const Icon(Icons.analytics_outlined, color: ThemeConstants.forestGreen, size: 20),
             const SizedBox(width: 8),
             Text(
               l10n.pricePerformance,
@@ -658,7 +728,7 @@ class DashboardScreen extends ConsumerWidget {
         const SizedBox(height: 4),
         Text(
           l10n.translate('sma_volatility_label'),
-          style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey),
+          style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600),
         ),
         const SizedBox(height: 16),
         RepaintBoundary(
@@ -669,23 +739,23 @@ class DashboardScreen extends ConsumerWidget {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.05),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
                 )
               ],
             ),
             child: Column(
               children: [
-                // Legend
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                // Legend - Responsive layout
+                Wrap(
+                  spacing: 20,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.center,
                   children: [
-                     _buildLegendItem(ThemeConstants.smaGold, l10n.translate('trend_14day')),
-                     const SizedBox(width: 12),
-                     _buildLegendItem(const Color(0xFF26A69A), l10n.translate('actual_price')),
-                     const SizedBox(width: 12),
-                     _buildLegendItem(const Color(0xFF26A69A).withValues(alpha: 0.1), l10n.translate('volatility_band')),
+                     _buildLegendItem(ThemeConstants.smaGold, l10n.translate('moving_average_label')),
+                     _buildLegendItem(const Color(0xFF26A69A), l10n.translate('actual_label')),
+                     _buildLegendItem(const Color(0xFF26A69A).withValues(alpha: 0.2), l10n.translate('volatility_bands_label')),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -693,12 +763,14 @@ class DashboardScreen extends ConsumerWidget {
                   height: 250,
                   child: LineChart(
                     LineChartData(
+                      minY: minY,
+                      maxY: maxY,
                       gridData: FlGridData(
                         show: true,
                         drawVerticalLine: false,
-                        horizontalInterval: 200,
+                        horizontalInterval: interval,
                         getDrawingHorizontalLine: (value) => FlLine(
-                          color: Colors.white.withValues(alpha: 0.05),
+                          color: Colors.grey.withValues(alpha: 0.08),
                           strokeWidth: 1,
                         ),
                       ),
@@ -716,10 +788,10 @@ class DashboardScreen extends ConsumerWidget {
                                 (val * 1000 * 60 * 60 * 24 + firstTimestamp).toInt(),
                               );
                               return Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
+                                padding: const EdgeInsets.only(top: 10.0),
                                 child: Text(
                                   DateFormat('d MMM', l10n.locale.languageCode).format(date),
-                                  style: TextStyle(color: Colors.grey.shade600, fontSize: 9),
+                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w600),
                                 ),
                               );
                             },
@@ -728,11 +800,15 @@ class DashboardScreen extends ConsumerWidget {
                         leftTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
-                            getTitlesWidget: (val, meta) => Text(
-                              '₹${val.toInt()}',
-                              style: TextStyle(color: Colors.grey.shade600, fontSize: 9),
+                            interval: interval,
+                            getTitlesWidget: (val, meta) => Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Text(
+                                '₹${NumberFormat("#,###").format(val.toInt())}',
+                                style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
                             ),
-                            reservedSize: 40,
+                            reservedSize: 52,
                           ),
                         ),
                       ),
@@ -746,13 +822,13 @@ class DashboardScreen extends ConsumerWidget {
                             return touchedSpots.map((spot) {
                               if (spot.barIndex == 2) { // Actual
                                 return LineTooltipItem(
-                                  '${l10n.translate('actual_label')}: ₹${spot.y.toStringAsFixed(0)}',
+                                  '${l10n.actualPrice}: ₹${NumberFormat("#,###").format(spot.y.toInt())}',
                                   const TextStyle(color: Color(0xFF26A69A), fontWeight: FontWeight.bold, fontSize: 11),
                                 );
                               }
                               if (spot.barIndex == 3) { // SMA
                                 return LineTooltipItem(
-                                  '${l10n.translate('sma_14_label')}: ₹${spot.y.toStringAsFixed(0)}',
+                                  '${l10n.translate('moving_average_label')}: ₹${NumberFormat("#,###").format(spot.y.toInt())}',
                                   const TextStyle(color: ThemeConstants.smaGold, fontWeight: FontWeight.bold, fontSize: 11),
                                 );
                               }
@@ -787,15 +863,27 @@ class DashboardScreen extends ConsumerWidget {
                           spots: actualSpots,
                           isCurved: true,
                           color: const Color(0xFF26A69A),
-                          barWidth: 2,
+                          barWidth: 2.5,
                           dotData: const FlDotData(show: false),
+                          // Subtle belowBarData for Actual Price
+                          belowBarData: BarAreaData(
+                            show: true,
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF26A69A).withValues(alpha: 0.1),
+                                const Color(0xFF26A69A).withValues(alpha: 0.0),
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
                         ),
                         // SMA
                         LineChartBarData(
                           spots: smaSpots,
                           isCurved: true,
                           color: ThemeConstants.smaGold,
-                          barWidth: 2,
+                          barWidth: 2.5,
                           dotData: const FlDotData(show: false),
                         ),
                       ],
@@ -803,18 +891,18 @@ class DashboardScreen extends ConsumerWidget {
                         BetweenBarsData(
                           fromIndex: 0, // Upper
                           toIndex: 1,   // Lower
-                          color: const Color(0xFF26A69A).withValues(alpha: 0.1),
+                          color: const Color(0xFF26A69A).withValues(alpha: 0.12),
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildInfoFooter(l10n.translate('moving_average_label'), l10n.translate('moving_average_desc')),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 20),
                     _buildInfoFooter(l10n.translate('volatility_bands_label'), l10n.translate('volatility_bands_desc')),
                   ],
                 )
@@ -828,6 +916,7 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildLegendItem(Color color, String label) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 6),

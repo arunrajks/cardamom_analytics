@@ -5,11 +5,14 @@ import 'package:cardamom_analytics/src/database/database_helper.dart';
 import 'package:cardamom_analytics/src/services/notification_service.dart';
 import 'package:cardamom_analytics/src/utils/app_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Top-level function required by Workmanager
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
+    // Ensure plugins are initialized for this isolate
+    WidgetsFlutterBinding.ensureInitialized();
     debugPrint("Background sync task started: $task");
     
     try {
@@ -41,25 +44,28 @@ void callbackDispatcher() {
       debugPrint("Checking for new data since: $lastKnownDate");
       
       // 4. Check for new data
-      final latestAuction = await syncService.checkForNewData(lastKnownDate);
+      final newAuctions = await syncService.checkForNewData(lastKnownDate);
 
-      if (latestAuction != null) {
-        debugPrint("New auction data detected! Syncing and notifying...");
+      if (newAuctions.isNotEmpty) {
+        debugPrint("${newAuctions.length} new auction(s) detected! Syncing and notifying...");
         
         // 5. Perform actual sync so the app data is fresh
         final newRecords = await syncService.syncNewData(maxPages: 2);
         debugPrint("Sync completed in background. New records: $newRecords");
         
-        // 6. Trigger notification
-        await notificationService.showNewAuctionNotification(
-          auctioneer: latestAuction.auctioneer,
-          avgPrice: latestAuction.avgPrice,
-          maxPrice: latestAuction.maxPrice,
-          date: latestAuction.date,
-        );
+        // 6. Trigger notifications for each new auction
+        for (var auction in newAuctions) {
+          await notificationService.showNewAuctionNotification(
+            auctioneer: auction.auctioneer,
+            avgPrice: auction.avgPrice,
+            maxPrice: auction.maxPrice,
+            date: auction.date,
+          );
+        }
 
-        // 7. Update last known date (syncNewData does this, but we reinforce it here)
-        await AppPreferences.setLastAuctionDate(latestAuction.date);
+        // 7. Update last known date to the newest one
+        final newestAuction = newAuctions.last;
+        await AppPreferences.setLastAuctionDate(newestAuction.date);
       } else {
         debugPrint("No new auction data found at this time.");
       }

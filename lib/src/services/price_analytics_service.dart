@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:cardamom_analytics/src/models/auction_data.dart';
 
 class MarketInsights {
@@ -9,6 +10,7 @@ class MarketInsights {
   final double weeklyMomentum;
   final List<double> recentArrivals;
   final Map<String, double> stats;
+  final Map<String, double> fullStats;
   final double volatility; 
   final double thirtyDayChange;
   final double vsLastYear; 
@@ -20,6 +22,8 @@ class MarketInsights {
   final String spreadLevel;
   final String spreadMessage;
   final int dataYearCount;
+  final int dataMonthCount;
+  final int totalDataYearCount;
   final double recentNormalRangeMin;
   final double recentNormalRangeMax;
   final double recentMedian;
@@ -36,6 +40,14 @@ class MarketInsights {
   final int highestPriceYear;
   final int lowestPriceYear;
   final List<MapEntry<String, double>> seasonalAverages; // Last 3 seasons
+  final String verdictAction; // Localization key
+  final String verdictRisk; // Localization key
+  final String verdictExplanation; // Localization key
+  final List<MonthlySeasonality> monthlySeasonality;
+  final double pctVsNormal;
+  final String stabilityMessage;
+  final String weeklySummary;
+  final List<int> seasonalPeakMonths;
 
   MarketInsights({
     required this.season,
@@ -45,6 +57,7 @@ class MarketInsights {
     required this.weeklyMomentum,
     required this.recentArrivals,
     required this.stats,
+    required this.fullStats,
     required this.volatility,
     required this.thirtyDayChange,
     required this.vsLastYear,
@@ -56,6 +69,8 @@ class MarketInsights {
     required this.spreadLevel,
     required this.spreadMessage,
     required this.dataYearCount,
+    required this.dataMonthCount,
+    required this.totalDataYearCount,
     required this.recentNormalRangeMin,
     required this.recentNormalRangeMax,
     required this.recentMedian,
@@ -72,6 +87,14 @@ class MarketInsights {
     required this.highestPriceYear,
     required this.lowestPriceYear,
     required this.seasonalAverages,
+    required this.verdictAction,
+    required this.verdictRisk,
+    required this.verdictExplanation,
+    required this.monthlySeasonality,
+    required this.pctVsNormal,
+    required this.stabilityMessage,
+    required this.weeklySummary,
+    required this.seasonalPeakMonths,
   });
 }
 
@@ -88,6 +111,28 @@ class PricePerformancePoint {
     required this.sma,
     required this.upperBand,
     required this.lowerBand,
+  });
+}
+
+class MonthlySeasonality {
+  final int month;
+  final double relativePrice;
+  final double volatility;
+  final double confidence;
+  final int dataPoints;
+  final double pctVsNormal;
+  final String strength; // 'Strong', 'Weak', 'Neutral'
+  final String risk; // 'High', 'Moderate', 'Low'
+
+  MonthlySeasonality({
+    required this.month,
+    required this.relativePrice,
+    required this.volatility,
+    required this.confidence,
+    required this.dataPoints,
+    required this.pctVsNormal,
+    required this.strength,
+    required this.risk,
   });
 }
 
@@ -130,21 +175,30 @@ class PriceAnalyticsService {
 
   /// Calculates Price Performance data (SMA + Volatility Bands)
   /// Uses a 14-day period as recommended for commodity markets.
-  List<PricePerformancePoint> getPricePerformance(List<AuctionData> data, {int period = 14}) {
+  List<PricePerformancePoint> getPricePerformance(List<AuctionData> data, {int period = 14, bool useMaxPrice = false}) {
     if (data.length < period) return [];
 
     // 1. Group by date to handle multiple auctions per day
-    Map<String, List<double>> grouped = {};
+    Map<String, List<AuctionData>> grouped = {};
     for (var a in data) {
       final key = "${a.date.year}-${a.date.month}-${a.date.day}";
-      grouped.putIfAbsent(key, () => []).add(a.avgPrice);
+      grouped.putIfAbsent(key, () => []).add(a);
     }
 
-    // 2. Calculate daily averages and sort
+    // 2. Calculate daily metrics and sort
     List<MapEntry<DateTime, double>> daily = grouped.entries.map((e) {
       final parts = e.key.split("-");
       final dt = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-      return MapEntry(dt, e.value.reduce((a, b) => a + b) / e.value.length);
+      
+      double value;
+      if (useMaxPrice) {
+        value = e.value.map((a) => a.maxPrice).reduce(max);
+      } else {
+        // Assume avgPrice if not maxPrice (quantity aggregation handled elsewhere or via specialized call)
+        value = e.value.map((a) => a.avgPrice).reduce((a, b) => a + b) / e.value.length;
+      }
+      
+      return MapEntry(dt, value);
     }).toList()..sort((a, b) => a.key.compareTo(b.key));
 
     List<PricePerformancePoint> points = [];
@@ -152,7 +206,19 @@ class PriceAnalyticsService {
     // Bollinger Band calculation: 
     // Upper = SMA + (2 * SD)
     // Lower = SMA - (2 * SD)
-    for (int i = period - 1; i < daily.length; i++) {
+    for (int i = 0; i < daily.length; i++) {
+      if (i < period - 1) {
+        // Not enough data for SMA yet, but we want to return the actual point for alignment
+        points.add(PricePerformancePoint(
+          date: daily[i].key,
+          actual: daily[i].value,
+          sma: 0,
+          upperBand: 0,
+          lowerBand: 0,
+        ));
+        continue;
+      }
+
       final window = daily.sublist(i - (period - 1), i + 1);
       final prices = window.map((e) => e.value).toList();
       
@@ -172,6 +238,31 @@ class PriceAnalyticsService {
     }
 
     return points;
+  }
+
+  /// Special helper for aggregating daily quantity (sums totals)
+  List<FlSpot> getDailyQuantitySpots(List<AuctionData> data) {
+    if (data.isEmpty) return [];
+    
+    final chronData = List<AuctionData>.from(data)..sort((a, b) => a.date.compareTo(b.date));
+    Map<String, double> dailySum = {};
+    List<DateTime> dates = [];
+    
+    for (var a in chronData) {
+      final key = "${a.date.year}-${a.date.month}-${a.date.day}";
+      if (!dailySum.containsKey(key)) {
+        final parts = key.split("-");
+        dates.add(DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2])));
+      }
+      dailySum[key] = (dailySum[key] ?? 0.0) + a.quantity;
+    }
+
+    List<FlSpot> spots = [];
+    for (int i = 0; i < dates.length; i++) {
+      final key = "${dates[i].year}-${dates[i].month}-${dates[i].day}";
+      spots.add(FlSpot(i.toDouble(), dailySum[key]!));
+    }
+    return spots;
   }
 
   /// Returns the season label for a date (e.g., "2025-26" for Oct 2025)
@@ -260,6 +351,7 @@ class PriceAnalyticsService {
         weeklyMomentum: 0.0,
         recentArrivals: const [],
         stats: {},
+        fullStats: {},
         volatility: 0.0,
         thirtyDayChange: 0.0,
         vsLastYear: 0.0,
@@ -271,6 +363,8 @@ class PriceAnalyticsService {
         spreadLevel: 'stable',
         spreadMessage: 'market_stable_tip',
         dataYearCount: 0,
+        dataMonthCount: 0,
+        totalDataYearCount: 0,
         recentNormalRangeMin: 0.0,
         recentNormalRangeMax: 0.0,
         recentMedian: 0.0,
@@ -285,13 +379,36 @@ class PriceAnalyticsService {
         highestPriceYear: 0,
         lowestPriceYear: 0,
         seasonalAverages: const [],
+        verdictAction: "wait_for_clear_trend",
+        verdictRisk: "risk_low",
+        verdictExplanation: "advice_stable",
+        monthlySeasonality: const [],
+        pctVsNormal: 0.0,
+        stabilityMessage: 'steady_week',
+        weeklySummary: "0.0%",
+        seasonalPeakMonths: const [],
       );
     }
 
-    final stats = calculateDescriptiveStats(data);
+    // Identify 8-month rolling window (approx 240 days)
+    final latest = data.first;
+    final thresholdDate = latest.date.subtract(const Duration(days: 240));
+    
+    // Filter for 8-month window
+    var seasonalData = data.where((p) => p.date.isAfter(thresholdDate) || p.date.isAtSameMomentAs(thresholdDate)).toList();
+    
+    // Fallback: If 8-month data is sparse (< 100 records), use last 100 records
+    if (seasonalData.length < 100) {
+      seasonalData = data.take(100).toList();
+    }
+
+    // Calculate baseline stats using current rolling 8-month window
+    final stats = calculateDescriptiveStats(seasonalData);
+    
+    // Calculate full history stats for absolute extremes
+    final fullStats = calculateDescriptiveStats(data);
 
     // Latest data
-    final latest = data.first;
     final currentPrice = latest.avgPrice;
     stats['current'] = currentPrice;
     final longTermAvg = stats['mean'] ?? 0.0;
@@ -302,22 +419,36 @@ class PriceAnalyticsService {
         ? currentPrice
         : last30.fold(0.0, (sum, p) => sum + p.avgPrice) / last30.length;
 
-    String status = "stable";
-    if (currentPrice > avg30 * 1.05) status = "improving";
-    if (currentPrice < avg30 * 0.95) status = "weakening";
+    // Risk & Market Status Logic (Strict Rules)
+    final risk = analyzeRisk(data.take(180).toList());
+    final absVariability = (risk['netChange'] as double? ?? 0.0).abs();
+    
+    String verdictRisk;
+    String marketStatus; // Stable / Moderate / Volatile
+    if (absVariability <= 10.0) {
+      verdictRisk = "risk_low";
+      marketStatus = "stable";
+    } else if (absVariability <= 18.0) {
+      verdictRisk = "risk_moderate";
+      marketStatus = "moderate";
+    } else {
+      verdictRisk = "risk_high";
+      marketStatus = "volatile";
+    }
 
-    // Signal Logic
-    String signal = "hold_signal";
-    String advice = "advice_stable";
-
-    if (currentPrice > longTermAvg * 1.15) {
-      signal = "sell_now";
-      advice = "advice_high";
-    } else if (currentPrice < longTermAvg * 0.85) {
-      signal = "wait";
-      advice = "advice_low";
-    } else if (status == "improving") {
-      advice = "advice_improving";
+    // Action Logic
+    String verdictAction;
+    String verdictExplanation;
+    
+    if (currentPrice >= longTermAvg * 1.05 && marketStatus != "volatile") {
+      verdictAction = "good_time_to_sell";
+      verdictExplanation = "verdict_explanation_sell";
+    } else if (marketStatus == "volatile") {
+      verdictAction = "be_cautious";
+      verdictExplanation = "verdict_explanation_volatile";
+    } else {
+      verdictAction = "wait_for_clear_trend";
+      verdictExplanation = "verdict_explanation_normal";
     }
 
     // Comparison Metrics
@@ -348,17 +479,21 @@ class PriceAnalyticsService {
 
     double vsLongTermAvg = ((currentPrice - longTermAvg) / longTermAvg) * 100;
 
-    // Risk/Volatility
-    final risk = analyzeRisk(data.take(180).toList());
     double volatility = (risk['volatility'] as double?) ?? 0.0;
 
-    // 4. Calculate Weekly Momentum (This Week vs Last Week avg)
+    // 4. Calculate Rolling Weekly Momentum (Last 7 days vs Previous 7 days)
     final now = latest.date;
-    final thisWeekStart = now.subtract(Duration(days: now.weekday - 1));
-    final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
+    final thisWeekStart = now.subtract(const Duration(days: 6)); 
+    final lastWeekEnd = now.subtract(const Duration(days: 7));
+    final lastWeekStart = now.subtract(const Duration(days: 13));
     
-    final thisWeekPrices = data.where((p) => (p.date.isAfter(thisWeekStart) || p.date.isAtSameMomentAs(thisWeekStart)) && p.date.isBefore(now.add(const Duration(days: 1)))).toList();
-    final lastWeekPrices = data.where((p) => p.date.isAfter(lastWeekStart) && p.date.isBefore(thisWeekStart)).toList();
+    final thisWeekPrices = data.where((p) => 
+      (p.date.isAfter(thisWeekStart) || p.date.isAtSameMomentAs(thisWeekStart)) && 
+      (p.date.isBefore(now) || p.date.isAtSameMomentAs(now))).toList();
+    
+    final lastWeekPrices = data.where((p) => 
+      (p.date.isAfter(lastWeekStart) || p.date.isAtSameMomentAs(lastWeekStart)) && 
+      (p.date.isBefore(lastWeekEnd) || p.date.isAtSameMomentAs(lastWeekEnd))).toList();
 
     double weeklyMomentumValue = 0.0;
     double weeklyMin = currentPrice;
@@ -398,6 +533,9 @@ class PriceAnalyticsService {
     // 5. Recent Arrivals (last 7 data points)
     final recentArrivals = data.take(7).map((p) => p.quantityArrived ?? p.quantity).toList().reversed.toList();
 
+    // Calculate full seasonality map
+    final seasonalityMap = _calculateSeasonality(data);
+
     // 6. Farmer Advisories logic
     final advisories = <String>[];
     
@@ -408,7 +546,8 @@ class PriceAnalyticsService {
       final max6m = prices6m.reduce(max);
       final min6m = prices6m.reduce(min);
       
-      if (currentPrice >= max6m * 0.97) {
+      // Sync with main advisory: Only suggest selling if not in a "Wait" state
+      if (currentPrice >= max6m * 0.97 && verdictAction != 'wait_for_clear_trend') { // Changed from signal != 'wait'
         advisories.add('price_near_high');
       } else if (currentPrice <= min6m * 1.03) {
         advisories.add('price_near_low');
@@ -432,8 +571,42 @@ class PriceAnalyticsService {
       advisories.add('market_stable_tip');
     }
     
-    if (status == 'improving' && currentPrice < longTermAvg * 1.1) {
+    if (marketStatus == 'improving' && currentPrice < longTermAvg * 1.1) { // Changed from status == 'improving'
       advisories.add('improving_trend_tip');
+    }
+
+    // Seasonality Tips (based on data-driven analysis)
+    final currentMonthSeasonality = seasonalityMap.firstWhere(
+      (s) => s.month == latest.date.month,
+      orElse: () => MonthlySeasonality(
+        month: latest.date.month,
+        relativePrice: 1.0,
+        volatility: 0.1,
+        confidence: 0.0,
+        dataPoints: 0,
+        pctVsNormal: 0.0,
+        strength: 'Neutral',
+        risk: 'Low',
+      ),
+    );
+
+    if (currentMonthSeasonality.strength == 'Strong') {
+      advisories.add('seasonal_high_tip');
+    } else if (currentMonthSeasonality.strength == 'Weak') {
+      advisories.add('seasonal_low_tip');
+    }
+
+    // Proactive: Look ahead to next month
+    final nextMonth = (latest.date.month % 12) + 1;
+    final nextMonthSeasonality = seasonalityMap.firstWhere(
+      (s) => s.month == nextMonth,
+      orElse: () => currentMonthSeasonality, // Fallback
+    );
+
+    if (nextMonthSeasonality.strength == 'Strong' && currentMonthSeasonality.strength != 'Strong') {
+      advisories.add('seasonal_next_high_tip');
+    } else if (nextMonthSeasonality.strength == 'Weak' && currentMonthSeasonality.strength != 'Weak') {
+      advisories.add('seasonal_next_low_tip');
     }
 
     // Calculate recent stats for 3-season comparison (last 3 years)
@@ -451,7 +624,13 @@ class PriceAnalyticsService {
     final double recentNormalRangeMin = recentMean - (0.5 * recentStdDev);
     final double recentNormalRangeMax = recentMean + (0.5 * recentStdDev);
 
-    final int dataYearCount = ((data.first.date.difference(data.last.date).inDays).abs() / 365.25).ceil();
+    // Calculate effective months and years for UI baseline context
+    final totalDays = (seasonalData.first.date.difference(seasonalData.last.date).inDays).abs();
+    final int dataYearCount = (totalDays / 365.25).floor();
+    final int dataMonthCount = (totalDays / 30.44).ceil();
+
+    final totalHistoryDays = (data.first.date.difference(data.last.date).inDays).abs();
+    final int totalHistoryYears = (totalHistoryDays / 365.25).ceil();
 
     // Find Years of Extremes
     int highestYear = 0;
@@ -485,14 +664,43 @@ class PriceAnalyticsService {
       return MapEntry(label, avg);
     }).toList();
 
+    // New Analytical Fields for Refined UI
+    String weeklySummary = (weeklyMomentumValue >= 0 ? "+" : "") + weeklyMomentumValue.toStringAsFixed(1) + "%";
+    
+    String stabilityMessage = 'steady_week';
+    if (weeklyVol > 2.0) {
+      stabilityMessage = 'volatile_week';
+    } else if (weeklyMomentumValue.abs() < 0.5) {
+      stabilityMessage = 'sideways_week';
+    }
+
+    // Estimate current trend (30-day SMA as proxy for current trend value)
+    final recent30 = data.take(30).toList();
+    double currentTrend = currentPrice;
+    if (recent30.isNotEmpty) {
+      currentTrend = recent30.map((e) => e.avgPrice).reduce((a, b) => a + b) / recent30.length;
+    }
+    
+    double seasonalFactor = currentMonthSeasonality.relativePrice;
+    // pctVsNormal = (CurrentPrice / (EstimatedTrend * SeasonalFactor)) - 1
+    double pctVsNormal = ((currentPrice / (currentTrend * seasonalFactor)) - 1) * 100;
+
+    // Seasonal Pattern (find all strong months >= 1.05)
+    final seasonalPeakMonths = seasonalityMap
+        .where((m) => m.strength == 'Strong')
+        .map((m) => m.month)
+        .toList()
+      ..sort();
+
     return MarketInsights(
       season: getSeasonLabel(latest.date),
-      status: status,
-      advice: advice,
-      signal: signal,
+      status: marketStatus,
+      advice: verdictExplanation,
+      signal: verdictAction,
       weeklyMomentum: weeklyMomentumValue,
       recentArrivals: recentArrivals,
       stats: stats,
+      fullStats: fullStats,
       volatility: volatility,
       thirtyDayChange: risk['netChange'] ?? 0.0,
       thirtyDayStdDev: risk['stdDev'] ?? 0.0,
@@ -505,11 +713,13 @@ class PriceAnalyticsService {
       spreadLevel: volatility > 2.5 ? 'very_wide' : (volatility > 1.2 ? 'moderate' : 'narrow'),
       spreadMessage: risk['message'] as String,
       dataYearCount: dataYearCount,
+      dataMonthCount: dataMonthCount,
+      totalDataYearCount: totalHistoryYears,
       recentNormalRangeMin: recentNormalRangeMin,
       recentNormalRangeMax: recentNormalRangeMax,
       recentMedian: recentMedian,
       recentStdDev: recentStdDev,
-      confidenceLevel: dataYearCount > 7 ? 'high' : (dataYearCount > 3 ? 'medium' : 'low'),
+      confidenceLevel: totalHistoryYears >= 8 ? 'high' : (totalHistoryYears >= 3 ? 'medium' : 'low'),
       firstDataDate: data.last.date,
       lastDataDate: data.first.date,
       weeklyMin: weeklyMin,
@@ -520,6 +730,107 @@ class PriceAnalyticsService {
       highestPriceYear: highestYear,
       lowestPriceYear: lowestYear,
       seasonalAverages: seasonalAverages,
+      verdictAction: verdictAction,
+      verdictRisk: verdictRisk,
+      verdictExplanation: verdictExplanation,
+      monthlySeasonality: seasonalityMap,
+      pctVsNormal: pctVsNormal,
+      stabilityMessage: stabilityMessage,
+      weeklySummary: weeklySummary,
+      seasonalPeakMonths: seasonalPeakMonths,
     );
+  }
+
+  List<MonthlySeasonality> _calculateSeasonality(List<AuctionData> data) {
+    if (data.isEmpty) return [];
+
+    // 1. Group by Year-Month to get monthly averages (Resampling)
+    Map<String, List<double>> monthlyPricesMap = {}; // Key: "YYYY-MM"
+    List<AuctionData> chronData = List.from(data)..sort((a, b) => a.date.compareTo(b.date));
+    
+    for (var a in chronData) {
+      String key = "${a.date.year}-${a.date.month.toString().padLeft(2, '0')}";
+      monthlyPricesMap.putIfAbsent(key, () => []).add(a.avgPrice);
+    }
+
+    List<String> sortedMonthKeys = monthlyPricesMap.keys.toList()..sort();
+    if (sortedMonthKeys.length < 13) return []; // Need at least 13 months for 12-period decomposition
+
+    List<double> monthlyMeansList = sortedMonthKeys.map((k) {
+      final prices = monthlyPricesMap[k]!;
+      return prices.reduce((a, b) => a + b) / prices.length;
+    }).toList();
+
+    // 2. Multiplicative Decomposition Step 1: Trend Estimation (Centered Moving Average)
+    // A 2x12 MA: First a 12-period MA, then a 2-period MA applied to that
+    List<double?> trend = List.filled(monthlyMeansList.length, null);
+    for (int i = 6; i < monthlyMeansList.length - 6; i++) {
+       // CMA Calculation:
+       double sum12 = 0;
+       for (int j = i - 6; j < i + 6; j++) sum12 += monthlyMeansList[j];
+       
+       double sum12Next = 0;
+       for (int j = i - 5; j <= i + 6; j++) sum12Next += monthlyMeansList[j];
+       
+       trend[i] = (sum12 / 12.0 + sum12Next / 12.0) / 2.0;
+    }
+
+    // 3. Step 2: Detrend (Ratio-to-Moving-Average)
+    List<double?> seasonalIndices = List.filled(monthlyMeansList.length, null);
+    for (int i = 0; i < monthlyMeansList.length; i++) {
+      if (trend[i] != null && trend[i]! > 0) {
+        seasonalIndices[i] = monthlyMeansList[i] / trend[i]!;
+      }
+    }
+
+    // 4. Step 3: Aggregate seasonal factors by Month-of-Year
+    Map<int, List<double>> factorsByMonth = {};
+    for (int i = 0; i < sortedMonthKeys.length; i++) {
+      if (seasonalIndices[i] != null) {
+        int month = int.parse(sortedMonthKeys[i].split('-')[1]);
+        factorsByMonth.putIfAbsent(month, () => []).add(seasonalIndices[i]!);
+      }
+    }
+
+    Map<int, double> monthlyAverages = {};
+    Map<int, double> monthlyStds = {};
+    Map<int, int> dataPointsCount = {};
+
+    factorsByMonth.forEach((month, factors) {
+      double mean = factors.reduce((a, b) => a + b) / factors.length;
+      monthlyAverages[month] = mean;
+
+      double variance = factors.map((x) => pow(x - mean, 2)).reduce((a, b) => a + b) / factors.length;
+      monthlyStds[month] = sqrt(variance);
+      dataPointsCount[month] = factors.length;
+    });
+
+    // 5. Step 4: Normalize (ensure sum of indices = 12)
+    double sumOfAverages = monthlyAverages.values.isEmpty ? 12.0 : monthlyAverages.values.reduce((a, b) => a + b);
+    double normalizationFactor = 12.0 / sumOfAverages;
+
+    final maxPoints = dataPointsCount.values.isEmpty ? 1 : dataPointsCount.values.reduce(max);
+
+    // 6. Final result construction
+    List<MonthlySeasonality> results = [];
+    for (int month = 1; month <= 12; month++) {
+      final avg = (monthlyAverages[month] ?? 1.0) * normalizationFactor;
+      final std = monthlyStds[month] ?? 0.0;
+      final count = dataPointsCount[month] ?? 0;
+      final pctEffect = (avg - 1.0) * 100;
+
+      results.add(MonthlySeasonality(
+        month: month,
+        relativePrice: avg,
+        volatility: std,
+        confidence: count / maxPoints,
+        dataPoints: count,
+        pctVsNormal: pctEffect,
+        strength: avg > 1.05 ? 'Strong' : (avg < 0.95 ? 'Weak' : 'Neutral'),
+        risk: std > 0.15 ? 'High' : (std > 0.08 ? 'Moderate' : 'Low'),
+      ));
+    }
+
+    return results;
   }
 }

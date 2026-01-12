@@ -35,7 +35,6 @@ class AnalyticsScreen extends ConsumerWidget {
           
           final analytics = ref.read(priceAnalyticsServiceProvider);
           final insights = analytics.getMarketInsights(data);
-          final risk = analytics.analyzeRisk(data);
           
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -43,22 +42,22 @@ class AnalyticsScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSmartAdvisoryCard(context, insights, l10n),
-                const SizedBox(height: 12),
-                _buildDecisionSummaryRow(context, insights, risk, l10n),
+                const SizedBox(height: 16),
+                _buildMarketVerdictSection(context, insights, l10n),
                 const SizedBox(height: 24),
-                _buildMarketRiskStabilitySection(context, risk, insights, l10n),
-                const SizedBox(height: 24),
-                _buildFarmerProTips(context, insights.farmerAdvisories, l10n),
+                _buildFarmerProTips(context, insights, l10n),
                 const SizedBox(height: 24),
                 _buildKeyStatisticsSection(context, insights, l10n),
+                const SizedBox(height: 24),
+                _buildMarketRiskDetailsCollapsible(context, insights, l10n),
                 const SizedBox(height: 32),
-                _buildDisclaimer(l10n, insights, l10n.yearsOfData(insights.dataYearCount)),
+                _buildDisclaimer(l10n, insights),
               ],
             ),
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error loading analytics: $err')),
+        error: (err, stack) => Center(child: Text('${l10n.translate('error_loading_analytics')}: $err')),
       ),
     );
   }
@@ -84,13 +83,13 @@ class AnalyticsScreen extends ConsumerWidget {
   Widget _buildSmartAdvisoryCard(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: ThemeConstants.primaryGreen,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: ThemeConstants.primaryGreen.withValues(alpha: 0.3),
+            color: ThemeConstants.primaryGreen.withValues(alpha: 0.2),
             blurRadius: 15,
             offset: const Offset(0, 8),
           )
@@ -99,130 +98,153 @@ class AnalyticsScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white, size: 24),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.smartAdvisory,
-                    style: GoogleFonts.outfit(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w600),
-                  ),
-                ],
+              Text(
+                l10n.smartAdvisory,
+                style: GoogleFonts.outfit(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  l10n.translate(insights.signal),
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-                ),
-              ),
+              _buildStatusPill(context, insights, l10n),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
           Text(
             l10n.translate(insights.advice),
             style: GoogleFonts.outfit(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.w500,
-              height: 1.4,
+              height: 1.3,
             ),
           ),
-          const SizedBox(height: 20),
-          _buildInsightRow(Icons.calendar_month, "${l10n.currentSeason}: ${l10n.translate(insights.season)}"),
-          const SizedBox(height: 8),
-          _buildInsightRow(Icons.trending_up, "${l10n.marketStatusLabel}: ${l10n.translate(insights.status)}"),
-          const SizedBox(height: 20),
-          Text(
-            "${insights.confidenceLevel == 'high' ? l10n.confidenceHigh : (insights.confidenceLevel == 'medium' ? l10n.confidenceMedium : l10n.confidenceLow)} (${l10n.yearsOfData(insights.dataYearCount)})",
-            style: GoogleFonts.outfit(color: Colors.white60, fontSize: 13),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 16,
+            runSpacing: 10,
+            children: [
+              _buildMetaInfo(Icons.calendar_month, "${l10n.currentSeason}: ${l10n.translate(insights.season)}"),
+              _buildMetaInfo(Icons.trending_up, "${l10n.marketStatusLabel}: ${l10n.translate(insights.status).toUpperCase()}"),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildMetaInfo(
+            Icons.info_outline, 
+            "${insights.confidenceLevel == 'high' ? l10n.confidenceHigh : (insights.confidenceLevel == 'medium' ? l10n.confidenceMedium : l10n.confidenceLow)}"
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDecisionSummaryRow(BuildContext context, MarketInsights insights, Map<String, dynamic> risk, AppLocalizations l10n) {
-    final riskKey = risk['level'];
-    final riskColor = riskKey == 'high' ? Colors.red : (riskKey == 'moderate' ? Colors.orange : Colors.green);
-    final riskIcon = riskKey == 'high' ? Icons.error_outline : (riskKey == 'moderate' ? Icons.warning_amber_rounded : Icons.check_circle_outline);
-
-    // Verdict Logic
-    final bool isSell = insights.signal.contains('sell');
-    final verdictColor = isSell ? Colors.green : (insights.signal.contains('wait') ? Colors.orange : Colors.blue);
-    final verdictIcon = isSell ? Icons.check_box_outlined : Icons.info_outline;
+  Widget _buildStatusPill(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
+    Color pillColor;
+    switch (insights.verdictAction) {
+      case 'good_time_to_sell': pillColor = Colors.greenAccent; break;
+      case 'be_cautious': pillColor = ThemeConstants.actionOrange; break;
+      default: pillColor = Colors.white70;
+    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFFDF7F0), // Light cream/peach background
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: const Color(0xFFF3E5D5)),
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        alignment: WrapAlignment.spaceBetween,
+      child: Text(
+        l10n.translate(insights.verdictAction),
+        style: TextStyle(color: pillColor, fontWeight: FontWeight.bold, fontSize: 12),
+      ),
+    );
+  }
+
+  Widget _buildMetaInfo(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: Colors.white54, size: 16),
+        const SizedBox(width: 6),
+        Text(text, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildMarketVerdictSection(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
+    Color actionColor;
+    IconData actionIcon;
+    switch (insights.verdictAction) {
+      case 'good_time_to_sell': actionColor = Colors.green; actionIcon = Icons.check_circle_outline; break;
+      case 'be_cautious': actionColor = ThemeConstants.actionOrange; actionIcon = Icons.warning_amber_rounded; break;
+      default: actionColor = Colors.blue; actionIcon = Icons.hourglass_empty;
+    }
+
+    Color riskColor;
+    IconData riskIcon;
+    switch (insights.verdictRisk) {
+      case 'risk_high': riskColor = Colors.red; riskIcon = Icons.error_outline; break;
+      case 'risk_moderate': riskColor = ThemeConstants.actionOrange; riskIcon = Icons.warning_outlined; break;
+      default: riskColor = Colors.green; riskIcon = Icons.shield_outlined;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.marketVerdict,
+          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: ThemeConstants.sectionOrange),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            _buildVerdictChip(
+              context,
+              l10n.actionLabel, 
+              l10n.translate(insights.verdictAction), 
+              actionIcon, 
+              actionColor
+            ),
+            _buildVerdictChip(
+              context,
+              "${l10n.riskLabel}:", 
+              l10n.translate(insights.verdictRisk), 
+              riskIcon, 
+              riskColor
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVerdictChip(BuildContext context, String label, String value, IconData icon, Color color) {
+    final width = (MediaQuery.of(context).size.width - 44) / 2; // 16*2 padding + 12 spacing
+    return Container(
+      width: width,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(label, style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.7), fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
           Row(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.psychology_outlined, color: Color(0xFF4A4135), size: 20),
-              const SizedBox(width: 8),
-              Text(
-                l10n.decisionSummary,
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13, color: const Color(0xFF4A4135)),
-              ),
-            ],
-          ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              // Action Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: verdictColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(verdictIcon, color: verdictColor, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.translate(insights.signal),
-                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: verdictColor),
-                    ),
-                  ],
-                ),
-              ),
-              // Risk Badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: riskColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(riskIcon, color: riskColor, size: 14),
-                    const SizedBox(width: 4),
-                    Text(
-                      "${l10n.riskLabel}: ${l10n.translate(riskKey)}",
-                      style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: riskColor),
-                    ),
-                  ],
+              Icon(icon, color: color, size: 16),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  value, 
+                  style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: color, height: 1.2),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -247,80 +269,52 @@ class AnalyticsScreen extends ConsumerWidget {
   }
 
 
-  Widget _buildMarketRiskStabilitySection(BuildContext context, Map<String, dynamic> risk, MarketInsights insights, AppLocalizations l10n) {
-    final riskKey = risk['level'];
-    final riskColor = riskKey == 'high' ? Colors.red : (riskKey == 'moderate' ? Colors.orange : Colors.green);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.marketRiskStability,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
-        ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(30),
+  Widget _buildMarketRiskDetailsCollapsible(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          title: Text(
+            l10n.marketRiskDetailsTitle,
+            style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w600, color: ThemeConstants.textDark),
           ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: riskColor.withValues(alpha: 0.1),
-                    child: Icon(Icons.security, color: riskColor, size: 20),
+          trailing: const Icon(Icons.keyboard_arrow_down, color: ThemeConstants.neutralGrey),
+          childrenPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: _buildStatLabelValue(
+                    context, 
+                    l10n.volatility30Day, 
+                    "${insights.thirtyDayChange >= 0 ? '+' : ''}${insights.thirtyDayChange.toStringAsFixed(1)}%", 
+                    l10n.volatilityHelpTitle, 
+                    l10n.volatilityHelpDesc, 
+                    l10n,
+                    valueColor: insights.thirtyDayChange > 0 ? ThemeConstants.secondaryGreen : (insights.thirtyDayChange < 0 ? ThemeConstants.alertRed : ThemeConstants.textDark),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "${l10n.currentRisk}: ${l10n.translate(riskKey)}",
-                          style: TextStyle(color: riskColor, fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.translate(risk['message']),
-                          style: const TextStyle(fontSize: 14, color: Colors.grey, height: 1.4),
-                        ),
-                      ],
-                    ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildStatLabelValue(
+                    context, 
+                    l10n.stabilityLevelLabel, 
+                    "± ₹${insights.thirtyDayStdDev.toStringAsFixed(0)}", 
+                    l10n.stabilityHelpTitle, 
+                    l10n.stabilityHelpDesc, 
+                    l10n
                   ),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
-                child: Divider(color: Color(0xFFF3F0EC)),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: _buildStatLabelValue(
-                      context, 
-                      l10n.volatility30Day, 
-                      "${insights.thirtyDayChange >= 0 ? '+' : ''}${insights.thirtyDayChange.toStringAsFixed(1)}%", 
-                      l10n.volatilityHelpTitle, 
-                      l10n.volatilityHelpDesc, 
-                      l10n,
-                      valueColor: insights.thirtyDayChange > 0 ? ThemeConstants.secondaryGreen : (insights.thirtyDayChange < 0 ? ThemeConstants.alertRed : ThemeConstants.textDark),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatLabelValue(context, l10n.stabilityLevelLabel, "± ₹${insights.thirtyDayStdDev.toStringAsFixed(0)}", l10n.stabilityHelpTitle, l10n.stabilityHelpDesc, l10n),
-                  ),
-                ],
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -359,66 +353,138 @@ class AnalyticsScreen extends ConsumerWidget {
   }
 
 
-  Widget _buildFarmerProTips(BuildContext context, List<String> advisories, AppLocalizations l10n) {
-    if (advisories.isEmpty) return const SizedBox.shrink();
+  Widget _buildFarmerProTips(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
+    // Collect all possible tip strings
+    final List<String> availableTips = [];
+
+    // 1. Compared to Normal (High Priority)
+    availableTips.add(
+      l10n.translate('compared_to_normal_desc')
+        .replaceAll('{pct}', insights.pctVsNormal.abs().toStringAsFixed(1))
+        .replaceAll('{level}', l10n.translate(insights.pctVsNormal >= 0 ? 'level_higher' : 'level_lower'))
+        .replaceAll('{month}', l10n.translate('month_${insights.lastDataDate?.month ?? DateTime.now().month}'))
+    );
+
+    // 2. This Week Performance (High Priority)
+    availableTips.add(
+      l10n.translate('this_week_desc')
+        .replaceAll('{direction}', l10n.translate(insights.weeklyMomentum >= 0.5 ? 'direction_up' : (insights.weeklyMomentum <= -0.5 ? 'direction_down' : 'direction_sideways')))
+        .replaceAll('{pct}', insights.weeklySummary)
+    );
+
+    // 3. Seasonal Insight (High Priority)
+    if (insights.seasonalPeakMonths.isNotEmpty) {
+      String pattern;
+      if (insights.seasonalPeakMonths.length == 1) {
+        pattern = l10n.translate('month_${insights.seasonalPeakMonths[0]}');
+      } else if (insights.seasonalPeakMonths.length == 2) {
+        pattern = "${l10n.translate('month_${insights.seasonalPeakMonths[0]}')} & ${l10n.translate('month_${insights.seasonalPeakMonths[1]}')}";
+      } else {
+        final lastMonth = insights.seasonalPeakMonths.last;
+        final otherMonths = insights.seasonalPeakMonths.sublist(0, insights.seasonalPeakMonths.length - 1);
+        pattern = "${otherMonths.map((m) => l10n.translate('month_$m')).join(', ')} & ${l10n.translate('month_$lastMonth')}";
+      }
+      
+      availableTips.add(
+        l10n.translate('seasonal_insight_desc').replaceAll('{pattern}', pattern)
+      );
+    }
+
+    // 4. Market Stability (Fallback / Secondary)
+    if (availableTips.length < 3) {
+      availableTips.add("${l10n.translate(insights.stabilityMessage)} ${l10n.translate('stability_advice_${insights.stabilityMessage.split('_')[0]}')}");
+    }
+
+    // 5. Traditional Advisories (Fallback)
+    for (var key in insights.farmerAdvisories) {
+      if (availableTips.length >= 3) break;
+      String tipText = l10n.translate(key);
+      if (key.contains('seasonal') && insights.lastDataDate != null) {
+        final monthDate = key.contains('next')
+            ? DateTime(insights.lastDataDate!.year, insights.lastDataDate!.month + 1)
+            : insights.lastDataDate!;
+        final monthName = DateFormat('MMMM', l10n.locale.languageCode).format(monthDate);
+        tipText = tipText.replaceAll('{month}', monthName);
+      }
+      availableTips.add(tipText);
+    }
+
+    // Final selection: Maximum 3 tips
+    final finalTips = availableTips.take(3).toList();
+    if (finalTips.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          l10n.proTips,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
+        Row(
+          children: [
+            const Icon(Icons.lightbulb_outline, color: ThemeConstants.sectionOrange, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              l10n.proTips,
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.sectionOrange),
+            ),
+          ],
         ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFF9E6), // Light yellow background
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: const Color(0xFFFFECB3)),
-          ),
-          child: Column(
-            children: advisories.map((key) {
-              IconData icon = Icons.lightbulb_outline;
-              Color iconColor = Colors.amber.shade800;
-              
-              if (key.contains('high') || key.contains('jump')) {
-                icon = Icons.trending_up;
-                iconColor = Colors.green;
-              } else if (key.contains('low')) {
-                icon = Icons.trending_down;
-                iconColor = Colors.orange;
-              } else if (key.contains('stable') || key.contains('ready')) {
-                icon = Icons.check_circle_outline;
-                iconColor = Colors.blue;
-              }
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(icon, color: iconColor, size: 20),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        l10n.translate(key),
-                        style: GoogleFonts.outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: const Color(0xFF4A4135),
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).take(2).toList(),
-          ),
+        const SizedBox(height: 12),
+        _buildRefinedInsightCard(
+          color: const Color(0xFFFFF9E6),
+          borderColor: const Color(0xFFFFECB3),
+          children: finalTips.map((tipText) => _buildBulletPoint(tipText)).toList(),
         ),
       ],
+    );
+  }
+
+  Widget _buildRefinedSectionHeader(String title, IconData icon) {
+    return Row(
+      children: [
+        Icon(icon, color: ThemeConstants.textDark.withValues(alpha: 0.7), size: 18),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRefinedInsightCard({required Color color, required Color borderColor, required List<Widget> children}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _buildBulletPoint(String text, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("• ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color ?? const Color(0xFF4A4135))),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: color ?? const Color(0xFF4A4135),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -433,7 +499,7 @@ class AnalyticsScreen extends ConsumerWidget {
           children: [
             Text(
               l10n.keyStatistics,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.sectionOrange),
             ),
           ],
         ),
@@ -460,20 +526,20 @@ class AnalyticsScreen extends ConsumerWidget {
               Expanded(
                 child: _buildMultiRowStatCard(
                   l10n.highestLowestTitle,
-                  l10n.translate('full_history_label').replaceAll('{count}', insights.dataYearCount.toString()),
+                  l10n.translate('full_history_label').replaceAll('{count}', insights.totalDataYearCount.toString()),
                   Icons.unfold_more,
-                  Colors.orange,
+                  ThemeConstants.actionOrange,
                   [
                     _buildCardRow(
                       context, 
                       l10n.highestSeenLabel, 
-                      "₹${insights.stats['max']?.toStringAsFixed(0)}", 
+                      "₹${insights.fullStats['max']?.toStringAsFixed(0)}", 
                       l10n, 
                       icon: Icons.trending_up,
                       iconColor: Colors.green,
                       suffix: insights.highestPriceYear > 0 ? "(${insights.highestPriceYear})" : null,
                       badge: l10n.rareLabel, 
-                      badgeColor: Colors.orange, 
+                      badgeColor: ThemeConstants.actionOrange, 
                       helpTitle: l10n.highestSeenHelpTitle, 
                       helpDesc: l10n.highestSeenHelpDesc
                     ),
@@ -481,7 +547,7 @@ class AnalyticsScreen extends ConsumerWidget {
                     _buildCardRow(
                       context, 
                       l10n.lowestSeenLabel, 
-                      "₹${insights.stats['min']?.toStringAsFixed(0)}", 
+                      "₹${insights.fullStats['min']?.toStringAsFixed(0)}", 
                       l10n, 
                       icon: Icons.trending_down,
                       iconColor: Colors.red,
@@ -574,30 +640,71 @@ class AnalyticsScreen extends ConsumerWidget {
 
   Widget _buildPriceLevelChart(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
     if (insights.seasonalAverages.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 120,
-        child: Center(child: Text("No seasonal data")),
+        child: Center(child: Text(l10n.translate('no_seasonal_data'))),
       );
     }
 
     final data = insights.seasonalAverages;
-    final double maxY = data.map((e) => e.value).reduce(max) * 1.25;
-    final double minY = data.map((e) => e.value).reduce(min) * 0.75;
+    
+    // Calculate "Nice" Y-Axis Range
+    final values = data.map((e) => e.value).toList();
+    double rawMin = values.reduce(min);
+    double rawMax = values.reduce(max);
+    
+    // Add margin
+    rawMin = rawMin * 0.95;
+    rawMax = rawMax * 1.15; // Extra room for tooltips
+    
+    double range = rawMax - rawMin;
+    double interval;
+    if (range <= 300) interval = 100;
+    else if (range <= 600) interval = 200;
+    else interval = 400;
+
+    double minY = (rawMin / interval).floorToDouble() * interval;
+    double maxY = (rawMax / interval).ceilToDouble() * interval;
 
     return Column(
       children: [
         SizedBox(
-          height: 140,
+          height: 180, // Increased height for better visibility
           child: Padding(
-            padding: const EdgeInsets.only(top: 20, right: 10, left: 10),
+            padding: const EdgeInsets.only(top: 30, right: 10, left: 0),
             child: LineChart(
               LineChartData(
-                gridData: const FlGridData(show: false),
+                minX: 0,
+                maxX: (data.length - 1).toDouble(),
+                minY: minY,
+                maxY: maxY,
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: false,
+                  horizontalInterval: interval,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.grey.withValues(alpha: 0.05),
+                    strokeWidth: 1,
+                  ),
+                ),
                 titlesData: FlTitlesData(
                   show: true,
                   rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: interval,
+                      getTitlesWidget: (val, meta) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          '₹${NumberFormat("#,###").format(val.toInt())}',
+                          style: TextStyle(color: Colors.grey.shade400, fontSize: 9, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      reservedSize: 45,
+                    ),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
@@ -605,28 +712,24 @@ class AnalyticsScreen extends ConsumerWidget {
                         int index = value.toInt();
                         if (index < 0 || index >= data.length) return const SizedBox();
                         return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
+                          padding: const EdgeInsets.only(top: 10.0),
                           child: Text(
-                            "S${index + 1}",
-                            style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold),
+                            data[index].key,
+                            style: TextStyle(color: Colors.grey.shade500, fontSize: 9, fontWeight: FontWeight.bold),
                           ),
                         );
                       },
                       interval: 1,
-                      reservedSize: 22,
+                      reservedSize: 28,
                     ),
                   ),
                 ),
                 borderData: FlBorderData(
                   show: true,
                   border: Border(
-                    bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.2), width: 1),
+                    bottom: BorderSide(color: Colors.grey.withValues(alpha: 0.1), width: 1),
                   ),
                 ),
-                minX: 0,
-                maxX: (data.length - 1).toDouble(),
-                minY: minY,
-                maxY: maxY,
                 showingTooltipIndicators: data.asMap().entries.map((e) {
                   return ShowingTooltipIndicators([
                     LineBarSpot(
@@ -638,24 +741,25 @@ class AnalyticsScreen extends ConsumerWidget {
                   LineChartBarData(
                     spots: data.asMap().entries.map((e) => FlSpot(e.key.toDouble(), e.value.value)).toList(),
                     isCurved: true,
-                    color: ThemeConstants.secondaryGreen,
-                    barWidth: 3,
+                    curveSmoothness: 0.35,
+                    color: ThemeConstants.primaryGreen,
+                    barWidth: 3.5,
                     isStrokeCapRound: true,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 4,
-                        color: ThemeConstants.secondaryGreen,
-                        strokeWidth: 2,
-                        strokeColor: Colors.white,
+                        radius: 5,
+                        color: Colors.white,
+                        strokeWidth: 3,
+                        strokeColor: ThemeConstants.primaryGreen,
                       ),
                     ),
                     belowBarData: BarAreaData(
                       show: true,
                       gradient: LinearGradient(
                         colors: [
-                          ThemeConstants.secondaryGreen.withValues(alpha: 0.15),
-                          ThemeConstants.secondaryGreen.withValues(alpha: 0.0),
+                          ThemeConstants.primaryGreen.withValues(alpha: 0.15),
+                          ThemeConstants.primaryGreen.withValues(alpha: 0.0),
                         ],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -664,13 +768,12 @@ class AnalyticsScreen extends ConsumerWidget {
                   ),
                 ],
                 lineTouchData: LineTouchData(
-                  enabled: false, // Static labels as per mockup
+                  enabled: false,
                   handleBuiltInTouches: false,
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (spot) => Colors.transparent,
-                    tooltipRoundedRadius: 8,
-                    tooltipPadding: const EdgeInsets.only(bottom: 0),
-                    tooltipMargin: 8,
+                    tooltipPadding: EdgeInsets.zero,
+                    tooltipMargin: 10,
                     getTooltipItems: (List<LineBarSpot> touchedBarSpots) {
                       return touchedBarSpots.map((barSpot) {
                         return LineTooltipItem(
@@ -792,7 +895,7 @@ class AnalyticsScreen extends ConsumerWidget {
 
 
 
-  Widget _buildDisclaimer(AppLocalizations l10n, MarketInsights insights, String countLabel) {
+  Widget _buildDisclaimer(AppLocalizations l10n, MarketInsights insights) {
     return Column(
       children: [
         Container(
@@ -823,7 +926,7 @@ class AnalyticsScreen extends ConsumerWidget {
               if (insights.firstDataDate != null && insights.lastDataDate != null) ...[
                 const SizedBox(height: 12),
                 Text(
-                  "Data Range: ${AppDates.ui.format(insights.firstDataDate!)} - ${AppDates.ui.format(insights.lastDataDate!)}",
+                  "${l10n.translate('data_range')}: ${AppDates.ui.format(insights.firstDataDate!)} - ${AppDates.ui.format(insights.lastDataDate!)}",
                   style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
                 ),
               ],

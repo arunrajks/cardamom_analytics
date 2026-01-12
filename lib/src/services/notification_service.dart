@@ -86,8 +86,12 @@ class NotificationService {
       iOS: iosDetails,
     );
 
+    // Generate a unique notification ID based on date and auctioneer 
+    // to prevent morning/evening auctions from overwriting each other.
+    final notificationId = (date.millisecondsSinceEpoch ~/ 1000000).remainder(100000) ^ auctioneer.hashCode.remainder(100000);
+
     await _notifications.show(
-      0, // Notification ID
+      notificationId,
       'Cardamom price update: ₹${avgPrice.toStringAsFixed(2)} Avg - See today\'s auction highs!',
       'Auctioneer: $auctioneer\nAvg Price: ₹${avgPrice.toStringAsFixed(2)}\nMax Price: ₹${maxPrice.toStringAsFixed(2)}',
       details,
