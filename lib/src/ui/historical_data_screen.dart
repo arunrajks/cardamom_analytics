@@ -678,9 +678,9 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     if (chartMinY == double.infinity || chartMinY < 0) chartMinY = 0;
     if (chartMaxY == 0) chartMaxY = 1000; // Fallback
 
-    // Add safe buffer
-    chartMaxY = chartMaxY * 1.05;
-    chartMinY = chartMinY * 0.95;
+    // Add tight buffer
+    chartMaxY = chartMaxY * 1.02; // Reduced from 1.05
+    chartMinY = chartMinY * 0.99; // Reduced from 0.95
 
     final double totalValue = data.fold<double>(0, (sum, e) {
       switch(_plotType) {
@@ -862,7 +862,9 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
         });
       }
       
-      ref.invalidate(historicalPricesProvider(fromDate: _fromDate, toDate: _toDate));
+      if (count > 0) {
+        ref.read(syncTriggerProvider.notifier).state++;
+      }
       ref.invalidate(lastSyncTimeProvider);
       
     } catch (e) {

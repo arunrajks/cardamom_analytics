@@ -357,11 +357,13 @@ class AnalyticsScreen extends ConsumerWidget {
     // Collect all possible tip strings
     final List<String> availableTips = [];
 
-    // 1. Compared to Normal (High Priority)
+    // 1. Combined Price Comparison (Hybrid: YoY + Hist)
     availableTips.add(
-      l10n.translate('compared_to_normal_desc')
-        .replaceAll('{pct}', insights.pctVsNormal.abs().toStringAsFixed(1))
-        .replaceAll('{level}', l10n.translate(insights.pctVsNormal >= 0 ? 'level_higher' : 'level_lower'))
+      l10n.translate('combined_comparison_desc')
+        .replaceAll('{yoy_pct}', insights.vsLastYear.abs().toStringAsFixed(1))
+        .replaceAll('{yoy_level}', l10n.translate(insights.vsLastYear >= 0 ? 'level_higher' : 'level_lower'))
+        .replaceAll('{hist_pct}', insights.pctVsNormal.abs().toStringAsFixed(1))
+        .replaceAll('{hist_level}', l10n.translate(insights.pctVsNormal >= 0 ? 'level_higher' : 'level_lower'))
         .replaceAll('{month}', l10n.translate('month_${insights.lastDataDate?.month ?? DateTime.now().month}'))
     );
 
@@ -653,15 +655,15 @@ class AnalyticsScreen extends ConsumerWidget {
     double rawMin = values.reduce(min);
     double rawMax = values.reduce(max);
     
-    // Add margin
-    rawMin = rawMin * 0.95;
-    rawMax = rawMax * 1.15; // Extra room for tooltips
+    // Add tight margin
+    rawMin = rawMin * 0.99;
+    rawMax = rawMax * 1.02; // Reduced from 1.15 to prevent large white space
     
     double range = rawMax - rawMin;
     double interval;
-    if (range <= 300) interval = 100;
-    else if (range <= 600) interval = 200;
-    else interval = 400;
+    if (range <= 200) interval = 50;
+    else if (range <= 500) interval = 100;
+    else interval = 200;
 
     double minY = (rawMin / interval).floorToDouble() * interval;
     double maxY = (rawMax / interval).ceilToDouble() * interval;

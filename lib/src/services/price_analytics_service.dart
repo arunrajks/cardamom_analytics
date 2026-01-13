@@ -451,18 +451,28 @@ class PriceAnalyticsService {
       verdictExplanation = "verdict_explanation_normal";
     }
 
-    // Comparison Metrics
+    // Comparison Metrics: Exact Date-to-Date YoY (e.g., Jan 1 2024 vs Jan 1 2025)
     double vsLastYear = 0.0;
-    final oneYearAgo = latest.date.subtract(const Duration(days: 365));
-    final lastYearData = data
-        .where((p) =>
-            p.date.isBefore(oneYearAgo) &&
-            p.date.isAfter(oneYearAgo.subtract(const Duration(days: 30))))
-        .toList();
-    if (lastYearData.isNotEmpty) {
-      double lastYearAvg =
-          lastYearData.fold(0.0, (sum, p) => sum + p.avgPrice) /
-              lastYearData.length;
+    final targetDateLastYear = latest.date.subtract(const Duration(days: 365));
+    
+    // Find auctions within +/- 4 days of exactly one year ago (to handle weekends/holidays)
+    final candidatesLastYear = data.where((p) => 
+      p.date.isAfter(targetDateLastYear.subtract(const Duration(days: 4))) &&
+      p.date.isBefore(targetDateLastYear.add(const Duration(days: 4)))
+    ).toList();
+
+    if (candidatesLastYear.isNotEmpty) {
+      // Find the group of auctions on the day CLOSEST to targetDateLastYear
+      Map<int, List<AuctionData>> groupedByDay = {};
+      for (var p in candidatesLastYear) {
+        final diff = (p.date.difference(targetDateLastYear).inDays).abs();
+        groupedByDay.putIfAbsent(diff, () => []).add(p);
+      }
+      
+      final closestDiff = groupedByDay.keys.reduce(min);
+      final closestDayAuctions = groupedByDay[closestDiff]!;
+      
+      double lastYearAvg = closestDayAuctions.fold(0.0, (sum, p) => sum + p.avgPrice) / closestDayAuctions.length;
       vsLastYear = ((currentPrice - lastYearAvg) / lastYearAvg) * 100;
     }
 

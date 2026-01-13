@@ -15,6 +15,10 @@ enum ChartRange { oneMonth, sixMonths, oneYear, all }
 
 final chartRangeProvider = StateProvider<ChartRange>((ref) => ChartRange.oneMonth);
 
+/// Global trigger to notify all providers that a data sync has occurred.
+/// Incrementing this will cause all auction data providers to invalidate/re-fetch.
+final syncTriggerProvider = StateProvider<int>((ref) => 0);
+
 @riverpod
 DatabaseHelper databaseHelper(Ref ref) {
   return DatabaseHelper();
@@ -51,6 +55,9 @@ Future<DateTime?> lastSyncTime(Ref ref) async {
 
 @riverpod
 Future<List<AuctionData>> historicalFullPrices(Ref ref) async {
+  // Watch the trigger: whenever it changes, this provider will re-run
+  ref.watch(syncTriggerProvider);
+  
   final db = ref.watch(databaseHelperProvider);
   final localData = await db.getByDateRange(); // No range = All data
   
@@ -61,8 +68,8 @@ Future<List<AuctionData>> historicalFullPrices(Ref ref) async {
   // ignore: discarded_futures
   sync.syncNewData(maxPages: 3).then((count) {
     if (count > 0) {
-      debugPrint("Startup sync found $count new records. Refreshing Dashboard.");
-      ref.invalidateSelf();
+      debugPrint("Startup sync found $count new records. Triggering app-wide refresh.");
+      ref.read(syncTriggerProvider.notifier).state++;
     }
     // Always invalidate lastSyncTime to update the UI message
     ref.invalidate(lastSyncTimeProvider);
@@ -75,6 +82,9 @@ Future<List<AuctionData>> historicalFullPrices(Ref ref) async {
 
 @riverpod
 Future<List<AuctionData>> dailyPrices(Ref ref) async {
+  // Watch the trigger
+  ref.watch(syncTriggerProvider);
+  
   // Offline-first: Fetch from DB immediately
   final db = ref.watch(databaseHelperProvider);
   // Fetch more initially so chart looks good
@@ -85,8 +95,8 @@ Future<List<AuctionData>> dailyPrices(Ref ref) async {
   
   sync.syncNewData().then((count) {
     if (count > 0) {
-      // If new data arrived, invalidate self to re-fetch from DB
-      ref.invalidateSelf();
+      // If new data arrived, trigger global refresh
+      ref.read(syncTriggerProvider.notifier).state++;
     }
   }).catchError((e) {
     debugPrint("Background sync failed: $e");
@@ -97,6 +107,9 @@ Future<List<AuctionData>> dailyPrices(Ref ref) async {
 
 @riverpod
 Future<List<AuctionData>> historicalPrices(Ref ref, {DateTime? fromDate, DateTime? toDate}) async {
+  // Watch the trigger
+  ref.watch(syncTriggerProvider);
+  
   final db = ref.watch(databaseHelperProvider);
   final localData = await db.getByDateRange(from: fromDate, to: toDate);
   return _deduplicate(localData);

@@ -120,15 +120,27 @@ class SyncService {
   /// or not present in the database.
   Future<List<AuctionData>> checkForNewData(DateTime? lastKnownDate) async {
     try {
-      final List<AuctionData> latestPage = await _apiService.fetchAuctionsByPage(1);
-      if (latestPage.isEmpty) return [];
+      // 1. Fetch from TWO sources to ensure we don't miss live updates
+      // The 'latest' page is often updated faster than the archive page.
+      final latestResults = await _apiService.fetchLatestAuctions();
+      final archivePage1 = await _apiService.fetchAuctionsByPage(1);
+      
+      // 2. Merge and deduplicate
+      final Map<String, AuctionData> merged = {};
+      for (var a in [...latestResults, ...archivePage1]) {
+        final key = "${AppDates.db.format(a.date)}_${a.auctioneer.toUpperCase()}";
+        merged[key] = a;
+      }
+      
+      final candidates = merged.values.toList();
+      if (candidates.isEmpty) return [];
 
-      // Get existing keys to avoid double notification
+      // 3. Get existing keys to avoid double notification
       final existingKeys = await _dbHelper.getAllAuctionKeys();
 
-      // Find records that are either newer than lastKnownDate 
+      // 4. Find records that are either newer than lastKnownDate 
       // OR have the same date but differ in auctioneer and are not in DB.
-      final newAuctions = latestPage.where((auction) {
+      final newAuctions = candidates.where((auction) {
         final key = "${AppDates.db.format(auction.date)}_${auction.auctioneer.toUpperCase()}";
         
         bool isNewer = lastKnownDate == null || auction.date.isAfter(lastKnownDate);
@@ -139,7 +151,7 @@ class SyncService {
         return isNewer || isTodayButNew;
       }).toList();
 
-      // Sort chronological so notifications appear in order
+      // 5. Sort chronological so notifications appear in order
       newAuctions.sort((a, b) => a.date.compareTo(b.date));
       
       return newAuctions;

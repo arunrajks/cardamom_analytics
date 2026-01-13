@@ -126,8 +126,8 @@ class _MainScreenState extends State<MainScreen> {
         },
         destinations: [
           NavigationDestination(
-            icon: const Icon(Icons.dashboard_outlined),
-            selectedIcon: const Icon(Icons.dashboard),
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
             label: l10n.dashboard,
           ),
           NavigationDestination(

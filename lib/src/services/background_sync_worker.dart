@@ -21,40 +21,41 @@ void callbackDispatcher() {
       final currentHour = now.hour;
       
       if (currentHour < 7 || currentHour >= 23) {
-        debugPrint("Background sync skipped: Quiet hours (11:30 PM - 7 AM)");
+        debugPrint("[BackgroundSync] Skipped: Quiet hours ($currentHour:00). Auctions active 7 AM - 11 PM.");
         return true; 
       }
 
-      // 1. Initialize services manually (since we're in a separate isolate)
+      // 1. Initialize services manually
       final dbHelper = DatabaseHelper();
       final apiService = SpicesBoardService();
       final syncService = SyncService(dbHelper, apiService);
       final notificationService = NotificationService();
       await notificationService.initialize();
 
-      // 2. Check if notifications are enabled
+      // 2. Check settings
       final enabled = await AppPreferences.areNotificationsEnabled();
       if (!enabled) {
-        debugPrint("Notifications are disabled in settings. Skipping.");
+        debugPrint("[BackgroundSync] Skipped: Notifications disabled in app settings.");
         return true;
       }
 
       // 3. Get last known auction date
       final lastKnownDate = await AppPreferences.getLastAuctionDate();
-      debugPrint("Checking for new data since: $lastKnownDate");
+      debugPrint("[BackgroundSync] Searching for new auctions since: ${lastKnownDate ?? 'Beginning'}");
       
       // 4. Check for new data
       final newAuctions = await syncService.checkForNewData(lastKnownDate);
 
       if (newAuctions.isNotEmpty) {
-        debugPrint("${newAuctions.length} new auction(s) detected! Syncing and notifying...");
+        debugPrint("[BackgroundSync] FOUND ${newAuctions.length} new auctions! Proceeding with sync...");
         
-        // 5. Perform actual sync so the app data is fresh
+        // 5. Perform actual sync
         final newRecords = await syncService.syncNewData(maxPages: 2);
-        debugPrint("Sync completed in background. New records: $newRecords");
+        debugPrint("[BackgroundSync] Sync complete. Added $newRecords records to database.");
         
-        // 6. Trigger notifications for each new auction
+        // 6. Trigger notifications
         for (var auction in newAuctions) {
+          debugPrint("[BackgroundSync] Triggering notification for ${auction.auctioneer} (${auction.date})");
           await notificationService.showNewAuctionNotification(
             auctioneer: auction.auctioneer,
             avgPrice: auction.avgPrice,
@@ -63,16 +64,17 @@ void callbackDispatcher() {
           );
         }
 
-        // 7. Update last known date to the newest one
+        // 7. Update last known date
         final newestAuction = newAuctions.last;
         await AppPreferences.setLastAuctionDate(newestAuction.date);
+        debugPrint("[BackgroundSync] Success: Last auction date updated to ${newestAuction.date}");
       } else {
-        debugPrint("No new auction data found at this time.");
+        debugPrint("[BackgroundSync] No new auctions found yet. Checking again in next cycle.");
       }
 
       return true;
     } catch (e) {
-      debugPrint("Background sync task failed: $e");
+      debugPrint("[BackgroundSync] CRITICAL FAILURE: $e");
       return false;
     }
   });

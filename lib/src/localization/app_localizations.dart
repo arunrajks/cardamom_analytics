@@ -13,7 +13,7 @@ class AppLocalizations {
   static const _localizedValues = {
     'en': {
       'app_title': 'Cardamom Analytics',
-      'dashboard': 'Dashboard',
+      'dashboard': 'Home',
       'analytics': 'Analytics',
       'history': 'History',
       'sync_now': 'Sync Now',
@@ -149,6 +149,7 @@ class AppLocalizations {
       'market_stability': 'Market Stability',
       'this_week': 'This Week',
       'compared_to_normal_desc': 'Current prices are about {pct}% {level} than the 11-year average for {month}.',
+      'combined_comparison_desc': 'Current prices are {yoy_pct}% {yoy_level} than last year (and {hist_pct}% {hist_level} than the 11-year average for {month}).',
       'level_higher': 'higher',
       'level_lower': 'lower',
       'steady_week': 'Prices are steady this week.',
@@ -271,7 +272,7 @@ class AppLocalizations {
     },
     'ml': {
       'app_title': 'ഏലക്കായ അനലിറ്റിക്സ്',
-      'dashboard': 'ഡാഷ്‌ബോർഡ്',
+      'dashboard': 'ഹോം',
       'analytics': 'വിശകലനം',
       'history': 'ചരിത്രം',
       'sync_now': 'സിങ്ക് ചെയ്യുക',
@@ -407,6 +408,7 @@ class AppLocalizations {
       'market_stability': 'വിപണി സ്ഥിരത',
       'this_week': 'ഈ ആഴ്ച',
       'compared_to_normal_desc': 'ഇപ്പോഴത്തെ വില {month}-ലെ 11 വർഷത്തെ ശരാശരിയേക്കാൾ {pct}% {level} ആണ്.',
+      'combined_comparison_desc': 'വില കഴിഞ്ഞ വർഷത്തെ അപേക്ഷിച്ച് {yoy_pct}% {yoy_level} ആണ്; {month}-ലെ 11 വർഷത്തെ ശരാശരിയേക്കാൾ {hist_pct}% {hist_level} ആണ്.',
       'level_higher': 'കൂടുതൽ',
       'level_lower': 'കുറവ്',
       'steady_week': 'ഈ ആഴ്ച വില വളരെ സ്ഥിരതയുള്ളതാണ്.',
@@ -529,7 +531,7 @@ class AppLocalizations {
     },
     'ta': {
       'app_title': 'ஏலக்காய் பகுப்பாய்வு',
-      'dashboard': 'டாஷ்போர்டு',
+      'dashboard': 'முகப்பு',
       'analytics': 'பகுப்பாய்வு',
       'history': 'வரலாறு',
       'sync_now': 'இணைத்தல்',
@@ -665,6 +667,7 @@ class AppLocalizations {
       'market_stability': 'சந்தை நிலைத்தன்மை',
       'this_week': 'இந்த வாரம்',
       'compared_to_normal_desc': 'தற்போதைய விலைகள் {month} மாதத்திற்கான 11 ஆண்டுகால சராசரியை விட {pct}% {level} உள்ளன.',
+      'combined_comparison_desc': 'விலைகள் கடந்த ஆண்டை விட {yoy_pct}% {yoy_level} உள்ளன, மேலும் {month} மாதத்திற்கான 11 ஆண்டுகால சராசரியை விட {hist_pct}% {hist_level} உள்ளன.',
       'level_higher': 'அதிகம்',
       'level_lower': 'குறைவு',
       'steady_week': 'இந்த வாரம் விலைகள் சீராக உள்ளன.',

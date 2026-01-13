@@ -278,9 +278,13 @@ class DashboardScreen extends ConsumerWidget {
                 );
                 
                 final ref = ProviderScope.containerOf(context);
-                await ref.read(syncServiceProvider).syncNewData(maxPages: 5);
-                ref.invalidate(historicalFullPricesProvider);
-                // Also update lastSyncTime provider
+                final count = await ref.read(syncServiceProvider).syncNewData(maxPages: 5);
+                
+                if (count > 0) {
+                  ref.read(syncTriggerProvider.notifier).state++;
+                }
+                
+                // Always invalidate lastSyncTime to update the UI message
                 ref.invalidate(lastSyncTimeProvider);
                 
                 if (context.mounted) {
@@ -485,16 +489,16 @@ class DashboardScreen extends ConsumerWidget {
     double rawMin = allValues.reduce(min);
     double rawMax = allValues.reduce(max);
     
-    // Add 2% padding
-    rawMin = rawMin * 0.98;
-    rawMax = rawMax * 1.05; // Room for tooltips
+    // Add tight padding
+    rawMin = rawMin * 0.99;
+    rawMax = rawMax * 1.02; // Minimal room for tooltips
     
     double priceRange = rawMax - rawMin;
     double interval;
-    if (priceRange <= 200) interval = 50;
+    if (priceRange <= 100) interval = 20;
+    else if (priceRange <= 250) interval = 50;
     else if (priceRange <= 500) interval = 100;
-    else if (priceRange <= 1000) interval = 200;
-    else interval = 500;
+    else interval = 200;
 
     double minY = (rawMin / interval).floorToDouble() * interval;
     double maxY = (rawMax / interval).ceilToDouble() * interval;
@@ -699,15 +703,16 @@ class DashboardScreen extends ConsumerWidget {
     double rawMin = allValues.reduce(min);
     double rawMax = allValues.reduce(max);
     
-    // Add 2% padding
-    rawMin = rawMin * 0.98;
+    // Add tight padding
+    rawMin = rawMin * 0.99;
     rawMax = rawMax * 1.02;
     
     double range = rawMax - rawMin;
     double interval;
-    if (range <= 200) interval = 50;
+    if (range <= 100) interval = 20;
+    else if (range <= 250) interval = 50;
     else if (range <= 500) interval = 100;
-    else interval = 200;
+    else interval = 100;
 
     double minY = (rawMin / interval).floorToDouble() * interval;
     double maxY = (rawMax / interval).ceilToDouble() * interval;
