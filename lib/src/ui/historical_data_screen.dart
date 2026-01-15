@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cardamom_analytics/src/providers/price_provider.dart';
 import 'package:cardamom_analytics/src/models/auction_data.dart';
 import 'package:cardamom_analytics/src/utils/app_dates.dart';
@@ -891,6 +892,10 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
 
     if (confirmed == true) {
       await ref.read(databaseHelperProvider).deleteAll();
+      // Reset notification baseline so we can re-notify for new data after clear
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_notified_auction_date');
+      
       ref.invalidate(historicalPricesProvider);
       setState(() {
         _statusMessage = l10n.clearAllData;
@@ -907,6 +912,10 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     
     try {
       int count = await ref.read(dataSeederServiceProvider).seedData(force: true);
+      // Reset notification baseline so we can re-notify for new data after re-seed
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_notified_auction_date');
+      
       ref.invalidate(historicalPricesProvider);
       setState(() {
         _isImporting = false;

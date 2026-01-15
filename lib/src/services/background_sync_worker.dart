@@ -16,14 +16,9 @@ void callbackDispatcher() {
     debugPrint("Background sync task started: $task");
     
     try {
-      // 0. Scheduling: Allow sync between 7 AM and 11:30 PM (Auction hours + buffer)
+      // 0. Logging: Track entry
       final now = DateTime.now();
-      final currentHour = now.hour;
-      
-      if (currentHour < 7 || currentHour >= 23) {
-        debugPrint("[BackgroundSync] Skipped: Quiet hours ($currentHour:00). Auctions active 7 AM - 11 PM.");
-        return true; 
-      }
+      debugPrint("[BackgroundSync] Worker heartbeat at ${now.toIso8601String()}");
 
       // 1. Initialize services manually
       final dbHelper = DatabaseHelper();

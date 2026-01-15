@@ -150,7 +150,13 @@ class SyncService {
                              
         return isNewer || isTodayButNew;
       }).toList();
-
+      
+      if (newAuctions.isEmpty) {
+        debugPrint("[SyncService] No new auctions found (Checked ${candidates.length} online, Last known date: ${lastKnownDate != null ? AppDates.db.format(lastKnownDate) : 'null'})");
+      } else {
+        debugPrint("[SyncService] Found ${newAuctions.length} new auctions to alert.");
+      }
+      
       // 5. Sort chronological so notifications appear in order
       newAuctions.sort((a, b) => a.date.compareTo(b.date));
       

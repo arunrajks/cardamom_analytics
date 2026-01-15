@@ -11,6 +11,7 @@ import 'package:cardamom_analytics/src/ui/widgets/app_info_dialog.dart';
 import 'package:cardamom_analytics/src/ui/theme/theme_constants.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
 import 'package:cardamom_analytics/src/ui/feedback_screen.dart';
+import 'package:cardamom_analytics/src/ui/profile_screen.dart';
 import 'package:cardamom_analytics/src/providers/locale_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -102,6 +103,10 @@ class DashboardScreen extends ConsumerWidget {
           icon: const Icon(Icons.language, color: ThemeConstants.forestGreen),
           onPressed: () => _showLanguageSelector(context, ref),
         ),
+        IconButton(
+          icon: const Icon(Icons.person_outline, color: ThemeConstants.forestGreen),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
+        ),
         GestureDetector(
           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FeedbackScreen())),
           child: const Padding(
@@ -177,33 +182,74 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.info_outline, size: 64, color: ThemeConstants.forestGreen),
-            const SizedBox(height: 16),
-            Text(l10n.loadingData, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(l10n.preparingRecords, textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            const CircularProgressIndicator(),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                ref.read(dataSeederServiceProvider).seedData(force: true).then((_) {
-                  ref.invalidate(dailyPricesProvider);
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ThemeConstants.forestGreen,
-                foregroundColor: Colors.white,
+    return Scaffold(
+      backgroundColor: ThemeConstants.creamApp,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.forestGreen.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.cloud_off_outlined, size: 64, color: ThemeConstants.forestGreen),
               ),
-              child: Text(l10n.forceReseedButton),
-            )
-          ],
+              const SizedBox(height: 24),
+              Text(
+                l10n.noHistoricalData,
+                style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.clickSyncHint,
+                style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40),
+              
+              // Action: Sync Live Data
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    // Trigger a real sync
+                    await ref.read(syncServiceProvider).syncNewData(maxPages: 3);
+                    ref.read(syncTriggerProvider.notifier).state++;
+                  },
+                  icon: const Icon(Icons.sync),
+                  label: Text(l10n.syncNow, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ThemeConstants.forestGreen,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 16),
+              
+              // Action: Re-seed Historical
+              TextButton.icon(
+                onPressed: () {
+                  ref.read(dataSeederServiceProvider).seedData(force: true).then((_) {
+                    ref.read(syncTriggerProvider.notifier).state++;
+                  });
+                },
+                icon: const Icon(Icons.history_edu),
+                label: Text(l10n.forceReseedButton),
+                style: TextButton.styleFrom(
+                  foregroundColor: ThemeConstants.forestGreen.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

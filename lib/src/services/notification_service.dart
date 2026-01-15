@@ -1,5 +1,6 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:intl/intl.dart';
 
 /// Service to handle local push notifications
 class NotificationService {
@@ -87,13 +88,16 @@ class NotificationService {
     );
 
     // Generate a unique notification ID based on date and auctioneer 
-    // to prevent morning/evening auctions from overwriting each other.
-    final notificationId = (date.millisecondsSinceEpoch ~/ 1000000).remainder(100000) ^ auctioneer.hashCode.remainder(100000);
+    // strictly positive to avoid Android issues.
+    final dayOfYear = date.day + (date.month * 31);
+    final notificationId = (dayOfYear * 100) + (auctioneer.hashCode.abs() % 100);
 
+    final dateLabel = DateFormat('dd MMM').format(date);
+    
     await _notifications.show(
       notificationId,
-      'Cardamom price update: ₹${avgPrice.toStringAsFixed(2)} Avg - See today\'s auction highs!',
-      'Auctioneer: $auctioneer\nAvg Price: ₹${avgPrice.toStringAsFixed(2)}\nMax Price: ₹${maxPrice.toStringAsFixed(2)}',
+      '$dateLabel: ₹${avgPrice.toStringAsFixed(0)} - $auctioneer',
+      'Avg Price: ₹${avgPrice.toStringAsFixed(2)}\nMax Price: ₹${maxPrice.toStringAsFixed(2)}',
       details,
       payload: 'auction_${date.toIso8601String()}',
     );

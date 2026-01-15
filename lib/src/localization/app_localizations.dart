@@ -269,6 +269,11 @@ class AppLocalizations {
       'data_range': 'Data Range',
       'no_seasonal_data': 'No seasonal data',
       'error_loading_analytics': 'Error loading analytics',
+      'profile': 'Profile',
+      'user_name': 'Your Name',
+      'farm_name': 'Farm/Estate Name',
+      'location': 'Location',
+      'save_profile': 'Save Profile',
     },
     'ml': {
       'app_title': 'ഏലക്കായ അനലിറ്റിക്സ്',
@@ -528,6 +533,11 @@ class AppLocalizations {
       'data_range': 'കാലയളവ്',
       'no_seasonal_data': 'സീസണൽ വിവരങ്ങൾ ലഭ്യമല്ല',
       'error_loading_analytics': 'അനലിറ്റിക്സ് ലഭ്യമാക്കുന്നതിൽ തകരാർ',
+      'profile': 'പ്രൊഫൈൽ',
+      'user_name': 'നിങ്ങളുടെ പേര്',
+      'farm_name': 'തോട്ടത്തിന്റെ പേര്',
+      'location': 'സ്ഥലം',
+      'save_profile': 'വിവരങ്ങൾ സംരക്ഷിക്കുക',
     },
     'ta': {
       'app_title': 'ஏலக்காய் பகுப்பாய்வு',
@@ -787,6 +797,11 @@ class AppLocalizations {
       'data_range': 'கால அளவு',
       'no_seasonal_data': 'பருவகால தரவு இல்லை',
       'error_loading_analytics': 'பகுப்பாய்வை ஏற்றுவதில் பிழை',
+      'profile': 'சுயவிவரம்',
+      'user_name': 'உங்கள் பெயர்',
+      'farm_name': 'தோட்டத்தின் பெயர்',
+      'location': 'இடம்',
+      'save_profile': 'விவரங்களைச் சேமிக்கவும்',
     },
   };
 
@@ -843,6 +858,11 @@ class AppLocalizations {
   String get email => translate('email');
   String get phoneNumber => translate('phone_number');
   String get profilePrivacyNote => translate('profile_privacy_note');
+  String get profile => translate('profile');
+  String get userName => translate('user_name');
+  String get farmName => translate('farm_name');
+  String get location => translate('location');
+  String get saveProfile => translate('save_profile');
   String get total => translate('total');
   String get mean => translate('mean');
   String get median => translate('median');

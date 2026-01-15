@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cardamom_analytics/src/ui/theme/theme_constants.dart';
 import 'package:cardamom_analytics/src/utils/app_preferences.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
+import 'package:cardamom_analytics/src/services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cardamom_analytics/src/services/background_sync_worker.dart';
+import 'package:workmanager/workmanager.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -165,7 +169,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
+                   ),
+                  
+                  const SizedBox(height: 48),
+                  
+                  // Debug Section
+                  Text(
+                    "DEBUG TOOLS (TESTING ONLY)",
+                    style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.red.shade300),
                   ),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final notificationService = NotificationService();
+                            await notificationService.showNewAuctionNotification(
+                              auctioneer: "TEST AUCTIONEER",
+                              avgPrice: 2500.0,
+                              maxPrice: 2850.0,
+                              date: DateTime.now(),
+                            );
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Test notification triggered!")),
+                              );
+                            }
+                          },
+                          icon: const Icon(Icons.notifications_active_outlined),
+                          label: const Text("Test Alert", style: TextStyle(fontSize: 12)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: ThemeConstants.forestGreen,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                             final prefs = await SharedPreferences.getInstance();
+                             await prefs.remove('last_notified_auction_date');
+                             if (mounted) {
+                               ScaffoldMessenger.of(context).showSnackBar(
+                                 const SnackBar(content: Text("Baseline reset. Background worker will notify for latest data on next run.")),
+                               );
+                             }
+                          },
+                          icon: const Icon(Icons.restart_alt),
+                          label: const Text("Reset Baseline", style: TextStyle(fontSize: 12)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.orange,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        // Trigger the same logic used in the background isolate
+                        // but run it in foreground for testing.
+                        setState(() => _isLoading = true);
+                        try {
+                           // We can't easily call callbackDispatcher() directly as it's meant for isolates
+                           // and uses top-level Workmanager stuff, but we can call the service logic.
+                           // For simplicity in testing, we'll use Workmanager to trigger an immediate one-off task.
+                           await Workmanager().registerOneOffTask(
+                             "debug-manual-check-${DateTime.now().millisecondsSinceEpoch}",
+                             "checkNewAuctions",
+                             inputData: {"debug": true},
+                           );
+                           if (mounted) {
+                             ScaffoldMessenger.of(context).showSnackBar(
+                               const SnackBar(content: Text("One-off background task registered! Close the app now to see notifications.")),
+                             );
+                           }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Failed to trigger task: $e")),
+                            );
+                          }
+                        } finally {
+                          if (mounted) setState(() => _isLoading = false);
+                        }
+                      },
+                      icon: const Icon(Icons.run_circle_outlined),
+                      label: const Text("Run Background Check Now"),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
