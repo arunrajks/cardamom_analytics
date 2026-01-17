@@ -11,60 +11,68 @@ import 'package:flutter/material.dart';
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
-    // Ensure plugins are initialized for this isolate
     WidgetsFlutterBinding.ensureInitialized();
-    debugPrint("Background sync task started: $task");
-    
-    try {
-      // 0. Logging: Track entry
-      final now = DateTime.now();
-      debugPrint("[BackgroundSync] Worker heartbeat at ${now.toIso8601String()}");
+    final now = DateTime.now();
+    debugPrint("[BackgroundSync] Worker heartbeat at ${now.toIso8601String()}");
 
-      // 1. Initialize services manually
+    try {
+      // 1. Check Schedule Frequency
+      // 11 AM to 9 PM: 30 mins (proceed every task)
+      // Others: 1 hour (proceed every other task if on 30 min timer)
+      final hour = now.hour;
+      final isPeakTime = hour >= 11 && hour < 21; // 11 AM to 9 PM
+      
+      final lastAttempt = await AppPreferences.getLastFetchAttemptTime();
+      if (lastAttempt != null) {
+        final difference = now.difference(lastAttempt);
+        if (!isPeakTime && difference.inMinutes < 55) {
+          debugPrint("[BackgroundSync] Outside peak hours (11AM-9PM). Skipping fetch as last fetch was ${difference.inMinutes} mins ago.");
+          return true;
+        }
+      }
+
+      // Record this attempt
+      await AppPreferences.setLastFetchAttemptTime(now);
+
+      // 2. Initialize services
       final dbHelper = DatabaseHelper();
       final apiService = SpicesBoardService();
       final syncService = SyncService(dbHelper, apiService);
       final notificationService = NotificationService();
       await notificationService.initialize();
 
-      // 2. Check settings
+      // 3. Check if notifications enabled
       final enabled = await AppPreferences.areNotificationsEnabled();
       if (!enabled) {
-        debugPrint("[BackgroundSync] Skipped: Notifications disabled in app settings.");
+        debugPrint("[BackgroundSync] Skipped: Notifications disabled.");
         return true;
       }
 
-      // 3. Get last known auction date
+      // 4. Check & Sync Data
       final lastKnownDate = await AppPreferences.getLastAuctionDate();
-      debugPrint("[BackgroundSync] Searching for new auctions since: ${lastKnownDate ?? 'Beginning'}");
-      
-      // 4. Check for new data
       final newAuctions = await syncService.checkForNewData(lastKnownDate);
 
       if (newAuctions.isNotEmpty) {
-        debugPrint("[BackgroundSync] FOUND ${newAuctions.length} new auctions! Proceeding with sync...");
+        debugPrint("[BackgroundSync] FOUND ${newAuctions.length} new auctions!");
         
-        // 5. Perform actual sync
-        final newRecords = await syncService.syncNewData(maxPages: 2);
-        debugPrint("[BackgroundSync] Sync complete. Added $newRecords records to database.");
+        // Sync the actual records
+        await syncService.syncNewData(maxPages: 2);
         
-        // 6. Trigger notifications
+        // Trigger notifications for new findings
         for (var auction in newAuctions) {
-          debugPrint("[BackgroundSync] Triggering notification for ${auction.auctioneer} (${auction.date})");
-          await notificationService.showNewAuctionNotification(
+          await notificationService.showPriceNotification(
             auctioneer: auction.auctioneer,
             avgPrice: auction.avgPrice,
             maxPrice: auction.maxPrice,
+            quantity: auction.quantity,
             date: auction.date,
           );
         }
 
-        // 7. Update last known date
-        final newestAuction = newAuctions.last;
-        await AppPreferences.setLastAuctionDate(newestAuction.date);
-        debugPrint("[BackgroundSync] Success: Last auction date updated to ${newestAuction.date}");
+        // Update last known notified date
+        await AppPreferences.setLastAuctionDate(newAuctions.last.date);
       } else {
-        debugPrint("[BackgroundSync] No new auctions found yet. Checking again in next cycle.");
+        debugPrint("[BackgroundSync] No new auctions found.");
       }
 
       return true;

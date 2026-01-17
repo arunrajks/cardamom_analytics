@@ -17,7 +17,8 @@ class AppLocalizations {
       'analytics': 'Analytics',
       'history': 'History',
       'sync_now': 'Sync Now',
-      'latest_auctions': 'Auctioneer',
+      'latest_auctions': 'Latest Auctions',
+
       'avg_price': 'Avg Price',
       'lot_quantity': 'Lot Quantity',
       'kg': 'kg',
@@ -281,7 +282,8 @@ class AppLocalizations {
       'analytics': 'വിശകലനം',
       'history': 'ചരിത്രം',
       'sync_now': 'സിങ്ക് ചെയ്യുക',
-      'latest_auctions': 'ലേലം നടത്തിയവർ',
+      'latest_auctions': 'പുതിയ ലേലങ്ങൾ',
+
       'avg_price': 'ശരാശരി വില',
       'lot_quantity': 'മൊത്തം അളവ്',
       'kg': 'കിലോ',
@@ -545,7 +547,8 @@ class AppLocalizations {
       'analytics': 'பகுப்பாய்வு',
       'history': 'வரலாறு',
       'sync_now': 'இணைத்தல்',
-      'latest_auctions': 'ஏலதாரர்',
+      'latest_auctions': 'சமீபத்திய ஏலங்கள்',
+
       'avg_price': 'சராசரி விலை',
       'lot_quantity': 'மொத்த அளவு',
       'kg': 'கிலோ',

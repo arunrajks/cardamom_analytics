@@ -365,9 +365,14 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               Text(
                 DateFormat('EEEE, MMM d, yyyy', l10n.locale.languageCode).format(latestDate),
-                style: GoogleFonts.outfit(color: Colors.grey, fontSize: 13),
+                style: GoogleFonts.outfit(
+                  color: ThemeConstants.forestGreen, 
+                  fontSize: 14, 
+                  fontWeight: FontWeight.bold
+                ),
               ),
               const SizedBox(height: 16),
+
               ...latestAuctions.map((auction) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: ElevatedButton(
@@ -381,6 +386,15 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       child: Row(
                         children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.gavel, size: 20, color: ThemeConstants.forestGreen),
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +402,7 @@ class DashboardScreen extends ConsumerWidget {
                                 Text(
                                   auction.auctioneer,
                                   style: GoogleFonts.outfit(
-                                    fontSize: 14,
+                                    fontSize: 15,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -400,17 +414,28 @@ class DashboardScreen extends ConsumerWidget {
                               ],
                             ),
                           ),
-                          Text(
-                            '₹ ${NumberFormat("#,##0").format(auction.avgPrice)}',
-                            style: GoogleFonts.outfit(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                '₹ ${NumberFormat("#,##0").format(auction.avgPrice)}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: ThemeConstants.forestGreen,
+                                ),
+                              ),
+                              if (auction.maxPrice > 0)
+                                Text(
+                                  'Max: ₹${NumberFormat("#,##0").format(auction.maxPrice)}',
+                                  style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.w600),
+                                ),
+                            ],
                           ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.info_outline, size: 16),
+                          const SizedBox(width: 4),
                         ],
                       ),
+
                     ),
                   )),
             ],

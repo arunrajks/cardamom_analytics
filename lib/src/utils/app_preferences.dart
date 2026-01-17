@@ -11,6 +11,8 @@ class AppPreferences {
   static const String _locationKey = 'location';
   static const String _userEmailKey = 'user_email';
   static const String _userPhoneKey = 'user_phone';
+  static const String _lastFetchAttemptKey = 'last_fetch_attempt_timestamp';
+
 
   /// Get profile data
   static Future<Map<String, String>> getProfile() async {
@@ -95,4 +97,22 @@ class AppPreferences {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_notificationFrequencyKey, hours);
   }
+
+  /// Get the last fetch attempt timestamp
+
+  static Future<DateTime?> getLastFetchAttemptTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final str = prefs.getString(_lastFetchAttemptKey);
+    if (str != null) {
+      return DateTime.parse(str);
+    }
+    return null;
+  }
+
+  /// Set the last fetch attempt timestamp
+  static Future<void> setLastFetchAttemptTime(DateTime time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_lastFetchAttemptKey, time.toIso8601String());
+  }
 }
+
