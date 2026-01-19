@@ -18,7 +18,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   final _feedbackController = TextEditingController();
   bool _isLoading = false;
 
-  final String developerEmail = "arunrajks21@gmail.com";
+  final String developerEmail = "apps.spicekraft@gmail.com";
 
   Future<void> _sendViaEmail() async {
     if (_formKey.currentState!.validate()) {

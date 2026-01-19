@@ -7,6 +7,7 @@ import 'package:cardamom_analytics/src/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cardamom_analytics/src/services/background_sync_worker.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -23,6 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _isLoading = true;
+  final String developerEmail = "apps.spicekraft@gmail.com";
 
   @override
   void initState() {
@@ -59,6 +61,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Navigator.pop(context);
       }
     }
+  }
+
+  Future<void> _syncProfileViaEmail() async {
+    if (_formKey.currentState!.validate()) {
+      final body = "Cardamom Analytics - User Registration\n\n"
+          "Name: ${_nameController.text}\n"
+          "Farm: ${_farmController.text}\n"
+          "Location: ${_locationController.text}\n"
+          "Email: ${_emailController.text}\n"
+          "Phone: ${_phoneController.text}\n\n"
+          "Date: ${DateTime.now().toIso8601String()}";
+
+      final Uri emailUri = Uri(
+        scheme: 'mailto',
+        path: developerEmail,
+        query: _encodeQueryParameters({
+          'subject': 'App Registration: ${_nameController.text}',
+          'body': body,
+        }),
+      );
+
+      try {
+        if (await canLaunchUrl(emailUri)) {
+          await launchUrl(emailUri);
+        } else {
+          await launchUrl(emailUri);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Could not open email app.")),
+          );
+        }
+      }
+    }
+  }
+
+  String? _encodeQueryParameters(Map<String, String> params) {
+    return params.entries
+        .map((MapEntry<String, String> e) =>
+            '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+        .join('&');
   }
 
   @override
@@ -170,6 +214,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                    ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      onPressed: _syncProfileViaEmail,
+                      icon: const Icon(Icons.alternate_email),
+                      label: const Text(
+                        "Register & Sync to Cloud",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ThemeConstants.forestGreen,
+                        side: const BorderSide(color: ThemeConstants.forestGreen, width: 2),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                    ),
+                  ),
                   
                   const SizedBox(height: 48),
                   
