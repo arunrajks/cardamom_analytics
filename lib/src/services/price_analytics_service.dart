@@ -2,6 +2,8 @@ import 'dart:math';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:cardamom_analytics/src/models/auction_data.dart';
 
+enum HeadlineType { seasonal, trend, generic }
+
 class MarketInsights {
   final String season; 
   final String status; 
@@ -46,8 +48,16 @@ class MarketInsights {
   final List<MonthlySeasonality> monthlySeasonality;
   final double pctVsNormal;
   final String stabilityMessage;
+  final double vsFiveSeasonAvg; // Percentage vs last 5 years
+  final double? sameDayLastYearPrice; // Absolute value from closest day YoY
   final String weeklySummary;
   final List<int> seasonalPeakMonths;
+  final String headlineAdvisory; // Pre-formatted or composite message
+  final String? headlineAdvisoryKey; // Localization key if applicable
+  final HeadlineType headlineType;
+  final double weeklyChangeRupee;
+  final double yoyChangeRupee;
+  final String statusBadge; // Localization key: market_strong, market_steady, market_weakened
 
   MarketInsights({
     required this.season,
@@ -93,8 +103,16 @@ class MarketInsights {
     required this.monthlySeasonality,
     required this.pctVsNormal,
     required this.stabilityMessage,
+    required this.vsFiveSeasonAvg,
+    this.sameDayLastYearPrice,
     required this.weeklySummary,
     required this.seasonalPeakMonths,
+    required this.headlineAdvisory,
+    this.headlineAdvisoryKey,
+    required this.headlineType,
+    required this.weeklyChangeRupee,
+    required this.yoyChangeRupee,
+    required this.statusBadge,
   });
 }
 
@@ -321,14 +339,14 @@ class PriceAnalyticsService {
     }
     
     String riskLevel = "Low";
-    String riskMessage = "Market is very stable. Good time for slow decisions.";
+    String riskMessage = "risk_msg_low"; // Key
     
     if (avgDailyChange > 3.0) {
       riskLevel = "High";
-      riskMessage = "Prices are swinging wildly. Be very careful with large stock.";
+      riskMessage = "risk_msg_high"; // Key
     } else if (avgDailyChange > 1.5) {
       riskLevel = "Moderate";
-      riskMessage = "Normal market movements detected. Stay alert.";
+      riskMessage = "risk_msg_moderate"; // Key
     }
     
     return {
@@ -357,6 +375,8 @@ class PriceAnalyticsService {
         vsLastYear: 0.0,
         vsFiveYearAvg: 0.0,
         vsLongTermAvg: 0.0,
+        vsFiveSeasonAvg: 0.0,
+        sameDayLastYearPrice: null,
         farmerAdvisories: const [],
         normalRangeMin: 0.0,
         normalRangeMax: 0.0,
@@ -387,6 +407,12 @@ class PriceAnalyticsService {
         stabilityMessage: 'steady_week',
         weeklySummary: "0.0%",
         seasonalPeakMonths: const [],
+        headlineAdvisory: "syncing",
+        headlineAdvisoryKey: "syncing",
+        headlineType: HeadlineType.generic,
+        weeklyChangeRupee: 0.0,
+        yoyChangeRupee: 0.0,
+        statusBadge: 'market_steady',
       );
     }
 
@@ -414,10 +440,14 @@ class PriceAnalyticsService {
     final longTermAvg = stats['mean'] ?? 0.0;
 
     // Trend (Compare current vs 30 day avg)
-    final last30 = data.take(30).toList();
-    final avg30 = last30.isEmpty
-        ? currentPrice
-        : last30.fold(0.0, (sum, p) => sum + p.avgPrice) / last30.length;
+
+    // Weekly Change (Absolute Rupee)
+    double weeklyChangeRupee = 0.0;
+    if (data.length > 7) {
+      final thresholdWeekly = latest.date.subtract(const Duration(days: 7));
+      final candleLastWeek = data.firstWhere((p) => p.date.isBefore(thresholdWeekly) || p.date.isAtSameMomentAs(thresholdWeekly), orElse: () => data.last);
+      weeklyChangeRupee = currentPrice - candleLastWeek.avgPrice;
+    }
 
     // Risk & Market Status Logic (Strict Rules)
     final risk = analyzeRisk(data.take(180).toList());
@@ -453,6 +483,7 @@ class PriceAnalyticsService {
 
     // Comparison Metrics: Exact Date-to-Date YoY (e.g., Jan 1 2024 vs Jan 1 2025)
     double vsLastYear = 0.0;
+    double yoyChangeRupee = 0.0;
     final targetDateLastYear = latest.date.subtract(const Duration(days: 365));
     
     // Find auctions within +/- 4 days of exactly one year ago (to handle weekends/holidays)
@@ -473,7 +504,8 @@ class PriceAnalyticsService {
       final closestDayAuctions = groupedByDay[closestDiff]!;
       
       double lastYearAvg = closestDayAuctions.fold(0.0, (sum, p) => sum + p.avgPrice) / closestDayAuctions.length;
-      vsLastYear = ((currentPrice - lastYearAvg) / lastYearAvg) * 100;
+      yoyChangeRupee = currentPrice - lastYearAvg;
+      vsLastYear = (yoyChangeRupee / lastYearAvg) * 100;
     }
 
     double vsFiveYearAvg = 0.0;
@@ -619,9 +651,8 @@ class PriceAnalyticsService {
       advisories.add('seasonal_next_low_tip');
     }
 
-    // Calculate recent stats for 3-season comparison (last 3 years)
-    final threeYearsAgo = latest.date.subtract(const Duration(days: 365 * 3));
-    final recentData = data.where((p) => p.date.isAfter(threeYearsAgo)).toList();
+    // Calculate recent stats for 5-season comparison (last 5 years)
+    final recentData = data.where((p) => p.date.isAfter(fiveYearsAgo)).toList();
     
     // In case we don't have enough history, fallback to at least 100 records
     final effectiveRecentData = recentData.length < 100 ? data.take(100).toList() : recentData;
@@ -664,18 +695,42 @@ class PriceAnalyticsService {
     }
 
     final sortedSeasons = seasonGroups.keys.toList()..sort();
-    final last3Seasons = sortedSeasons.length > 3 
-        ? sortedSeasons.sublist(sortedSeasons.length - 3) 
+    final last5Seasons = sortedSeasons.length > 5 
+        ? sortedSeasons.sublist(sortedSeasons.length - 5) 
         : sortedSeasons;
-
-    final seasonalAverages = last3Seasons.map((label) {
+    
+    final seasonalAverages = last5Seasons.map((label) {
       final prices = seasonGroups[label]!;
       final avg = prices.reduce((a, b) => a + b) / prices.length;
       return MapEntry(label, avg);
     }).toList();
 
-    // New Analytical Fields for Refined UI
-    String weeklySummary = (weeklyMomentumValue >= 0 ? "+" : "") + weeklyMomentumValue.toStringAsFixed(1) + "%";
+    // Farmer Pro-Tip: Compare vs 5-Season average
+    double vsFiveSeasonAvg = 0.0;
+    if (seasonalAverages.isNotEmpty) {
+      final sumAvgs = seasonalAverages.fold(0.0, (sum, entry) => sum + entry.value);
+      final fiveSeasonMean = sumAvgs / seasonalAverages.length;
+      vsFiveSeasonAvg = ((currentPrice - fiveSeasonMean) / fiveSeasonMean) * 100;
+    }
+
+    // Farmer Pro-Tip: Exact or closest day last year (Absolute value)
+    double? sameDayLastYearPrice;
+    final targetDateLY = latest.date.subtract(const Duration(days: 365));
+    final candidatesLY = data.where((p) => 
+      p.date.isAfter(targetDateLY.subtract(const Duration(days: 7))) &&
+      p.date.isBefore(targetDateLY.add(const Duration(days: 7)))
+    ).toList();
+
+    if (candidatesLY.isNotEmpty) {
+      Map<int, List<AuctionData>> groupedLY = {};
+      for (var p in candidatesLY) {
+        final d = (p.date.difference(targetDateLY).inDays).abs();
+        groupedLY.putIfAbsent(d, () => []).add(p);
+      }
+      final minDiff = groupedLY.keys.reduce(min);
+      final matchingAuctions = groupedLY[minDiff]!;
+      sameDayLastYearPrice = matchingAuctions.fold(0.0, (s, p) => s + p.avgPrice) / matchingAuctions.length;
+    }
     
     String stabilityMessage = 'steady_week';
     if (weeklyVol > 2.0) {
@@ -702,6 +757,9 @@ class PriceAnalyticsService {
         .toList()
       ..sort();
 
+    // New Analytical Fields for Refined UI
+    String weeklySummary = "${weeklyMomentumValue >= 0 ? "+" : ""}${weeklyMomentumValue.toStringAsFixed(1)}%";
+    
     return MarketInsights(
       season: getSeasonLabel(latest.date),
       status: marketStatus,
@@ -717,6 +775,8 @@ class PriceAnalyticsService {
       vsLastYear: vsLastYear,
       vsFiveYearAvg: vsFiveYearAvg,
       vsLongTermAvg: vsLongTermAvg,
+      vsFiveSeasonAvg: vsFiveSeasonAvg,
+      sameDayLastYearPrice: sameDayLastYearPrice,
       farmerAdvisories: advisories,
       normalRangeMin: longTermAvg - (0.5 * (stats['stdDev'] ?? 0.0)),
       normalRangeMax: longTermAvg + (0.5 * (stats['stdDev'] ?? 0.0)),
@@ -748,7 +808,42 @@ class PriceAnalyticsService {
       stabilityMessage: stabilityMessage,
       weeklySummary: weeklySummary,
       seasonalPeakMonths: seasonalPeakMonths,
+      headlineAdvisory: _calculateHeadlineAdvisory(latest, currentMonthSeasonality, nextMonthSeasonality, verdictExplanation),
+      headlineAdvisoryKey: null, // Using dynamic string for headline
+      headlineType: _getHeadlineType(currentMonthSeasonality, nextMonthSeasonality),
+      weeklyChangeRupee: weeklyChangeRupee,
+      yoyChangeRupee: yoyChangeRupee,
+      statusBadge: weeklyMomentumValue > 0.8 ? 'market_strong' : (weeklyMomentumValue < -0.8 ? 'market_weakened' : 'market_steady'),
     );
+  }
+
+  HeadlineType _getHeadlineType(MonthlySeasonality current, MonthlySeasonality next) {
+    if (current.strength != 'Neutral' || next.strength == 'Strong') {
+      return HeadlineType.seasonal;
+    }
+    return HeadlineType.generic;
+  }
+
+  String _calculateHeadlineAdvisory(
+    AuctionData latest, 
+    MonthlySeasonality current, 
+    MonthlySeasonality next, 
+    String defaultVerdict
+  ) {
+    // Priority 1: Current Month Strong/Weak
+    if (current.strength == 'Strong') {
+      return "seasonal_high_tip"; // Key will be translated in UI with month
+    } else if (current.strength == 'Weak') {
+      return "seasonal_low_tip";
+    }
+
+    // Priority 2: Next Month Strong (Lookahead)
+    if (next.strength == 'Strong' && current.strength != 'Strong') {
+      return "seasonal_next_high_tip";
+    }
+
+    // Priority 3: Default Verdict (Normal Levels, Sell, etc.)
+    return defaultVerdict;
   }
 
   List<MonthlySeasonality> _calculateSeasonality(List<AuctionData> data) {
@@ -777,10 +872,14 @@ class PriceAnalyticsService {
     for (int i = 6; i < monthlyMeansList.length - 6; i++) {
        // CMA Calculation:
        double sum12 = 0;
-       for (int j = i - 6; j < i + 6; j++) sum12 += monthlyMeansList[j];
+       for (int j = i - 6; j < i + 6; j++) {
+         sum12 += monthlyMeansList[j];
+       }
        
        double sum12Next = 0;
-       for (int j = i - 5; j <= i + 6; j++) sum12Next += monthlyMeansList[j];
+       for (int j = i - 5; j <= i + 6; j++) {
+         sum12Next += monthlyMeansList[j];
+       }
        
        trend[i] = (sum12 / 12.0 + sum12Next / 12.0) / 2.0;
     }

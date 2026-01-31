@@ -115,7 +115,7 @@ final lastSyncTimeProvider = AutoDisposeFutureProvider<DateTime?>.internal(
 // ignore: unused_element
 typedef LastSyncTimeRef = AutoDisposeFutureProviderRef<DateTime?>;
 String _$historicalFullPricesHash() =>
-    r'4bf1752afec9a4068f4539bf8d22b6e751a9aa38';
+    r'b3a54ff9b86d59dac5af006b6df2c99b70443237';
 
 /// See also [historicalFullPrices].
 @ProviderFor(historicalFullPrices)
@@ -134,7 +134,7 @@ final historicalFullPricesProvider =
 // ignore: unused_element
 typedef HistoricalFullPricesRef =
     AutoDisposeFutureProviderRef<List<AuctionData>>;
-String _$dailyPricesHash() => r'10bc05b4cb97d8e9362d4cb3a9ab8714ed33ebf2';
+String _$dailyPricesHash() => r'e0797b898d07310d6ef182628de0bb3f20f07de7';
 
 /// See also [dailyPrices].
 @ProviderFor(dailyPrices)
@@ -152,7 +152,7 @@ final dailyPricesProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef DailyPricesRef = AutoDisposeFutureProviderRef<List<AuctionData>>;
-String _$historicalPricesHash() => r'5a6c05ed3c1c97158089c9f5fbf19a2ae8d721f2';
+String _$historicalPricesHash() => r'989eb2bd82518e7b7f5def2f9589ad2f2810905d';
 
 /// Copied from Dart SDK
 class _SystemHash {

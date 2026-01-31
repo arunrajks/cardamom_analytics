@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -13,12 +14,39 @@ import 'package:cardamom_analytics/src/localization/app_localizations.dart';
 import 'package:cardamom_analytics/src/ui/feedback_screen.dart';
 import 'package:cardamom_analytics/src/ui/profile_screen.dart';
 import 'package:cardamom_analytics/src/providers/locale_provider.dart';
+import 'package:cardamom_analytics/src/providers/navigation_provider.dart';
+import 'package:cardamom_analytics/src/ui/widgets/live_pulse_indicator.dart';
+import 'package:cardamom_analytics/src/ui/widgets/upcoming_auctions_widget.dart';
+import 'package:cardamom_analytics/src/providers/auction_schedule_provider.dart';
 
-class DashboardScreen extends ConsumerWidget {
+
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _syncIconController;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncIconController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _syncIconController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final asyncFullPrices = ref.watch(historicalFullPricesProvider);
     final analytics = ref.watch(priceAnalyticsServiceProvider);
     final l10n = AppLocalizations.of(context);
@@ -33,32 +61,46 @@ class DashboardScreen extends ConsumerWidget {
 
           final insights = analytics.getMarketInsights(prices);
 
+          final bool isAuctionTime = ref.watch(isAuctionLiveNowProvider).value ?? false;
+
           return RefreshIndicator(
             onRefresh: () async => ref.refresh(historicalFullPricesProvider),
-            child: CustomScrollView(
-              slivers: [
-                _buildAppBar(context, l10n, ref),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 10),
-                        _buildPriceOverview(context, prices, insights, l10n, ref),
-                        const SizedBox(height: 24),
-                        _buildTrendSection(context, ref, prices, l10n),
-                        const SizedBox(height: 24),
-                        _buildWeeklySnapshotCard(context, insights, l10n),
-                        const SizedBox(height: 24),
-                        _buildPricePerformanceSection(context, prices, analytics, l10n),
-                        const SizedBox(height: 24),
-                        _buildWeeklyAuctionSummary(context, prices, l10n),
-                        const SizedBox(height: 40),
-                      ],
+            child: Stack(
+              children: [
+                CustomScrollView(
+                  slivers: [
+                    _buildAppBar(context, l10n, ref),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (isAuctionTime) const SizedBox(height: 50), // Space for floating pill
+                            _buildSyncStatusBanner(context, ref, l10n),
+                            const SizedBox(height: 10),
+                            _buildLatestAuctionsSection(context, prices, l10n, ref),
+                            const SizedBox(height: 32),
+                            const UpcomingAuctionsWidget(),
+                            const SizedBox(height: 32),
+                            _buildPriceTrendChart(prices, insights, l10n, ref),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                // Floating Live Indicator - only shown during auction hours
+                if (isAuctionTime)
+                  Positioned(
+                    top: kToolbarHeight + 10, // Position below AppBar
+                    left: 20,
+                    right: 20,
+                    child: SafeArea(
+                      child: _buildLivePulsePopup(context, ref),
                     ),
                   ),
-                ),
               ],
             ),
           );
@@ -75,24 +117,29 @@ class DashboardScreen extends ConsumerWidget {
       backgroundColor: ThemeConstants.creamApp,
       elevation: 0,
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
             onTap: () => _showAboutDialog(context),
             child: Image.asset(
               'assets/logo.png',
-              height: 32,
-              width: 32,
+              height: 28,
+              width: 28,
             ),
           ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: () => _showAboutDialog(context),
-            child: Text(
-              l10n.appTitle,
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.bold,
-                color: ThemeConstants.forestGreen,
-                fontSize: 20,
+          const SizedBox(width: 8),
+          Flexible(
+            child: GestureDetector(
+              onTap: () => _showAboutDialog(context),
+              child: Text(
+                l10n.appTitle,
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  color: ThemeConstants.forestGreen,
+                  fontSize: 17, // Further reduction for long titles
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ),
           ),
@@ -100,21 +147,25 @@ class DashboardScreen extends ConsumerWidget {
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.language, color: ThemeConstants.forestGreen),
+          constraints: const BoxConstraints(maxWidth: 40),
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.language, color: ThemeConstants.forestGreen, size: 20),
           onPressed: () => _showLanguageSelector(context, ref),
         ),
         IconButton(
-          icon: const Icon(Icons.person_outline, color: ThemeConstants.forestGreen),
-          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
+          constraints: const BoxConstraints(maxWidth: 40),
+          padding: EdgeInsets.zero,
+          icon: const Icon(Icons.person_outline, color: ThemeConstants.forestGreen, size: 20),
+          onPressed: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const ProfileScreen())),
         ),
         GestureDetector(
-          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const FeedbackScreen())),
+          onTap: () => Navigator.push(context, CupertinoPageRoute(builder: (context) => const FeedbackScreen())),
           child: const Padding(
-            padding: EdgeInsets.only(right: 16, left: 8),
+            padding: EdgeInsets.only(right: 12, left: 4),
             child: CircleAvatar(
-              radius: 16,
+              radius: 14,
               backgroundColor: ThemeConstants.forestGreen,
-              child: Icon(Icons.chat_bubble_outline, size: 18, color: Colors.white),
+              child: Icon(Icons.chat_bubble_outline, size: 14, color: Colors.white),
             ),
           ),
         ),
@@ -126,6 +177,247 @@ class DashboardScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => const AppInfoDialog(),
+    );
+  }
+
+  Widget _buildPriceTrendChart(List<AuctionData> prices, MarketInsights insights, AppLocalizations l10n, WidgetRef ref) {
+    if (prices.length < 5) return const SizedBox.shrink();
+
+    final selectedRange = ref.watch(chartRangeProvider);
+    
+    // Filter data based on selected range
+    final now = DateTime.now();
+    DateTime cutoff;
+    switch (selectedRange) {
+      case ChartRange.oneMonth:
+        cutoff = DateTime(now.year, now.month - 1, now.day);
+        break;
+      case ChartRange.sixMonths:
+        cutoff = DateTime(now.year, now.month - 6, now.day);
+        break;
+      case ChartRange.oneYear:
+        cutoff = DateTime(now.year - 1, now.month, now.day);
+        break;
+      case ChartRange.fiveYears:
+        cutoff = DateTime(now.year - 5, now.month, now.day);
+        break;
+    }
+
+    final filteredData = prices.where((p) => p.date.isAfter(cutoff)).toList().reversed.toList();
+    if (filteredData.isEmpty) return const SizedBox.shrink();
+
+    // Aggregation for smoothness on 1Y/5Y
+    List<AuctionData> displayPoints = filteredData;
+    if (selectedRange == ChartRange.fiveYears || selectedRange == ChartRange.oneYear) {
+      final interval = selectedRange == ChartRange.fiveYears ? 14 : 3; 
+      final List<AuctionData> aggregated = [];
+      for (int i = 0; i < filteredData.length; i += interval) {
+        aggregated.add(filteredData[i]);
+      }
+      displayPoints = aggregated;
+    }
+
+    final List<FlSpot> actualSpots = [];
+    for (int i = 0; i < displayPoints.length; i++) {
+      actualSpots.add(FlSpot(i.toDouble(), displayPoints[i].avgPrice));
+    }
+
+    // Min/Max Y with buffer for cleaner look
+    final minVal = displayPoints.map((p) => p.avgPrice).reduce(min);
+    final maxVal = displayPoints.map((p) => p.avgPrice).reduce(max);
+    final rangeVal = maxVal - minVal;
+    final minY = (minVal - (rangeVal * 0.15)).floorToDouble();
+    final maxY = (maxVal + (rangeVal * 0.15)).ceilToDouble();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              l10n.translate('price_trend'),
+              style: GoogleFonts.outfit(
+                  fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
+            ),
+            _buildChartRangeSelector(ref, l10n),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              )
+            ],
+          ),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 220,
+                child: LineChart(
+                  LineChartData(
+                    gridData: FlGridData(
+                      show: true,
+                      drawVerticalLine: false,
+                      getDrawingHorizontalLine: (value) =>
+                          FlLine(color: Colors.grey.withValues(alpha: 0.05), strokeWidth: 1),
+                    ),
+                    titlesData: FlTitlesData(
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 22,
+                          interval: (displayPoints.length / 3).clamp(1.0, double.infinity),
+                          getTitlesWidget: (value, meta) {
+                            final index = value.toInt();
+                            if (index < 0 || index >= displayPoints.length) return const SizedBox.shrink();
+                            // Only show labels for start, middle, end or fixed intervals
+                            String fmt = selectedRange == ChartRange.oneMonth ? 'd MMM' : 'MMM yy';
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                DateFormat(fmt, l10n.locale.languageCode).format(displayPoints[index].date),
+                                style: const TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            if (value == minY || value == maxY) return const SizedBox.shrink();
+                            return Text(
+                              '₹${NumberFormat("#,###").format(value.round())}',
+                              style: const TextStyle(color: Colors.grey, fontSize: 8, fontWeight: FontWeight.bold),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    lineTouchData: LineTouchData(
+                      touchTooltipData: LineTouchTooltipData(
+                        getTooltipColor: (touchedSpot) => const Color(0xFF1B4332).withValues(alpha: 0.9),
+                        getTooltipItems: (List<LineBarSpot> touchedSpots) {
+                          return touchedSpots.map((spot) {
+                            final index = spot.x.toInt();
+                            if (index < 0 || index >= displayPoints.length) return null;
+                            final date = displayPoints[index].date;
+                            return LineTooltipItem(
+                              "${DateFormat('d MMM yyyy', l10n.locale.languageCode).format(date)}\n",
+                              const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
+                              children: [
+                                TextSpan(
+                                  text: "₹${NumberFormat("#,##0").format(spot.y.round())}",
+                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            );
+                          }).toList();
+                        },
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    minX: 0,
+                    maxX: (displayPoints.length - 1).toDouble(),
+                    minY: minY,
+                    maxY: maxY,
+                    lineBarsData: [
+                      // Actual Price Line (Teal) - Thicker for prominence
+                      LineChartBarData(
+                        spots: actualSpots,
+                        isCurved: true,
+                        color: const Color(0xFF00695C),
+                        barWidth: 4,
+                        isStrokeCapRound: true,
+                        dotData: const FlDotData(show: false),
+                        belowBarData: BarAreaData(
+                          show: true,
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              const Color(0xFF00695C).withValues(alpha: 0.25),
+                              const Color(0xFF00695C).withValues(alpha: 0.0),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  l10n.averageDisclaimer,
+                  style: GoogleFonts.outfit(
+                    fontSize: 9,
+                    color: Colors.grey.shade600,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChartRangeSelector(WidgetRef ref, AppLocalizations l10n) {
+    final selectedRange = ref.watch(chartRangeProvider);
+    
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F1F1).withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildRangeButton(ref, ChartRange.oneMonth, l10n.range1m, selectedRange == ChartRange.oneMonth),
+          _buildRangeButton(ref, ChartRange.sixMonths, l10n.range6m, selectedRange == ChartRange.sixMonths),
+          _buildRangeButton(ref, ChartRange.oneYear, l10n.range1y, selectedRange == ChartRange.oneYear),
+          _buildRangeButton(ref, ChartRange.fiveYears, l10n.rangeAll, selectedRange == ChartRange.fiveYears),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRangeButton(WidgetRef ref, ChartRange range, String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () => ref.read(chartRangeProvider.notifier).state = range,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF2D6A4F) : Colors.transparent, // Darker forest green
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.outfit(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? Colors.white : Colors.grey.shade500,
+          ),
+        ),
+      ),
     );
   }
 
@@ -255,107 +547,80 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPriceOverview(BuildContext context, List<AuctionData> prices, MarketInsights insights, AppLocalizations l10n, WidgetRef ref) {
+  Widget _buildLatestAuctionsSection(BuildContext context, List<AuctionData> prices, AppLocalizations l10n, WidgetRef ref) {
     if (prices.isEmpty) return const SizedBox.shrink();
-
-    final lastSyncAsnyc = ref.watch(lastSyncTimeProvider);
-    final hasNeverSynced = lastSyncAsnyc.value == null && !lastSyncAsnyc.isLoading;
 
     final latestDate = prices.first.date;
     final latestAuctions = prices.where((p) =>
         p.date.year == latestDate.year &&
         p.date.month == latestDate.month &&
         p.date.day == latestDate.day).toList();
-        
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (hasNeverSynced)
-          Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.blue.shade100),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.info_outline, color: Colors.blue),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.initialSyncPending,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blue),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        l10n.initialSyncHint,
-                        style: TextStyle(fontSize: 11, color: Colors.blue.shade700),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              l10n.latestAuctions,
-              style: GoogleFonts.outfit(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: ThemeConstants.textDark,
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh, color: ThemeConstants.headingOrange),
-              onPressed: () async {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(l10n.syncing),
-                    duration: const Duration(seconds: 2),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.latestAuctions,
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1B4332),
                   ),
-                );
-                
-                final ref = ProviderScope.containerOf(context);
-                final count = await ref.read(syncServiceProvider).syncNewData(maxPages: 5);
-                
-                if (count > 0) {
-                  ref.read(syncTriggerProvider.notifier).state++;
-                }
-                
-                // Always invalidate lastSyncTime to update the UI message
-                ref.invalidate(lastSyncTimeProvider);
-                
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(l10n.updated),
-                      backgroundColor: Colors.green,
-                      duration: const Duration(seconds: 1),
+                ),
+                ref.watch(lastSyncTimeProvider).when(
+                      data: (time) {
+                        if (time == null) return const SizedBox.shrink();
+                        final String timeStr = DateFormat.jm(l10n.locale.languageCode).format(time);
+                        return Text(
+                          l10n.lastUpdated(timeStr),
+                          style: GoogleFonts.outfit(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (_, __) => const SizedBox.shrink(),
                     ),
-                  );
-                }
-              },
-              tooltip: l10n.syncNow,
+              ],
+            ),
+            Row(
+              children: [
+                TextButton(
+                  onPressed: () => ref.read(navigationProvider.notifier).state = 3, // History index
+                  child: Text(
+                    l10n.translate('see_all'),
+                    style: const TextStyle(color: ThemeConstants.primaryGreen, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh, color: Colors.orange, size: 20),
+                  onPressed: () {
+                    ref.read(syncLoadingProvider.notifier).state = true;
+                    ref.refresh(historicalFullPricesProvider);
+                  },
+                ),
+              ],
             ),
           ],
         ),
         const SizedBox(height: 12),
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(32),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
+                color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               )
@@ -366,82 +631,152 @@ class DashboardScreen extends ConsumerWidget {
               Text(
                 DateFormat('EEEE, MMM d, yyyy', l10n.locale.languageCode).format(latestDate),
                 style: GoogleFonts.outfit(
-                  color: ThemeConstants.forestGreen, 
-                  fontSize: 14, 
-                  fontWeight: FontWeight.bold
+                  color: const Color(0xFF1B4332),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
               const SizedBox(height: 16),
-
-              ...latestAuctions.map((auction) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: ElevatedButton(
-                      onPressed: () => _showAuctionDetails(context, auction, l10n),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ThemeConstants.softGreen.withValues(alpha: 0.5),
-                        foregroundColor: ThemeConstants.forestGreen,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.8),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.gavel, size: 20, color: ThemeConstants.forestGreen),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  auction.auctioneer,
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  l10n.translate('Tap for details'),
-                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Text(
-                                '₹ ${NumberFormat("#,##0").format(auction.avgPrice)}',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: ThemeConstants.forestGreen,
-                                ),
-                              ),
-                              if (auction.maxPrice > 0)
-                                Text(
-                                  'Max: ₹${NumberFormat("#,##0").format(auction.maxPrice)}',
-                                  style: TextStyle(fontSize: 11, color: Colors.orange.shade800, fontWeight: FontWeight.w600),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(width: 4),
-                        ],
-                      ),
-
-                    ),
-                  )),
+              ...latestAuctions.asMap().entries.take(2).map((entry) {
+                final index = entry.key;
+                final auction = entry.value;
+                // If there are 2 auctions, latest (index 0) is Session 2, previous is Session 1
+                String sessionLabel = '';
+                if (latestAuctions.length >= 2) {
+                  sessionLabel = index == 0 ? l10n.translate('session_2') : l10n.translate('session_1');
+                }
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildCompactAuctionCard(
+                    context, 
+                    auction, 
+                    l10n, 
+                    isLatest: index == 0,
+                    sessionLabel: sessionLabel,
+                  ),
+                );
+              }),
             ],
           ),
         ),
       ],
+    );
+  }
+
+
+  Widget _buildCompactAuctionCard(BuildContext context, AuctionData auction, AppLocalizations l10n, {bool isLatest = false, String sessionLabel = ''}) {
+    return InkWell(
+      onTap: () => _showAuctionDetails(context, auction, l10n),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F8E9).withValues(alpha: 0.7), // Light green tint
+              borderRadius: BorderRadius.circular(24),
+              border: isLatest ? Border.all(color: ThemeConstants.primaryGreen.withValues(alpha: 0.3), width: 1.5) : null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.gavel_outlined, size: 18, color: Color(0xFF1B4332)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (sessionLabel.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            sessionLabel,
+                            style: GoogleFonts.outfit(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        auction.auctioneer,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1B4332),
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        l10n.translate('tap_for_details'),
+                        style: GoogleFonts.outfit(fontSize: 10, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "₹ ${NumberFormat("#,##0").format(auction.avgPrice)}",
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1B4332),
+                      ),
+                    ),
+                    Text(
+                      "Max: ₹${NumberFormat("#,##0").format(auction.maxPrice)}",
+                      style: GoogleFonts.outfit(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (isLatest)
+            Positioned(
+              top: -8,
+              left: 20,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ThemeConstants.primaryGreen,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+                ),
+                child: Text(
+                  l10n.translate('latest_tag'),
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -478,7 +813,7 @@ class DashboardScreen extends ConsumerWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(l10n.translate('Close'), style: const TextStyle(color: ThemeConstants.forestGreen, fontWeight: FontWeight.bold)),
+            child: Text(l10n.translate('close'), style: const TextStyle(color: ThemeConstants.forestGreen, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -505,945 +840,96 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildSyncStatusBanner(BuildContext context, WidgetRef ref, AppLocalizations l10n) {
+    final isSyncing = ref.watch(syncLoadingProvider);
 
-  Widget _buildTrendSection(BuildContext context, WidgetRef ref, List<AuctionData> prices, AppLocalizations l10n) {
-    final rangeValue = ref.watch(chartRangeProvider);
-    
-    // Filter history based on range
-    DateTime cutoff;
-    final now = DateTime.now();
-    switch (rangeValue) {
-      case ChartRange.oneMonth:
-        cutoff = now.subtract(const Duration(days: 30));
-        break;
-      case ChartRange.sixMonths:
-        cutoff = now.subtract(const Duration(days: 180));
-        break;
-      case ChartRange.oneYear:
-        cutoff = now.subtract(const Duration(days: 365));
-        break;
-      case ChartRange.all:
-        cutoff = DateTime(2000);
-        break;
-    }
-
-    final history = prices.where((p) => p.date.isAfter(cutoff)).toList().reversed.toList();
-    
-    if (history.isEmpty) {
-      return Center(child: Text(l10n.translate("no_data_range")));
-    }
-
-    // Grouping by date for daily averages
-    Map<String, List<double>> groupedByDate = {};
-    for (var auction in history) {
-      String dateKey = DateFormat('yyyy-MM-dd', l10n.locale.languageCode).format(auction.date);
-      groupedByDate.putIfAbsent(dateKey, () => []).add(auction.avgPrice);
-    }
-
-    List<MapEntry<DateTime, double>> dailyAverages = groupedByDate.entries.map((e) {
-      return MapEntry(
-        DateTime.parse(e.key),
-        e.value.reduce((a, b) => a + b) / e.value.length,
-      );
-    }).toList()..sort((a, b) => a.key.compareTo(b.key));
-
-    // Mapping x-axis to time
-    final firstTimestamp = dailyAverages.first.key.millisecondsSinceEpoch.toDouble();
-    List<FlSpot> spots = [];
-    for (var daily in dailyAverages) {
-      final x = (daily.key.millisecondsSinceEpoch.toDouble() - firstTimestamp) / (1000 * 60 * 60 * 24);
-      spots.add(FlSpot(x, daily.value));
-    }
-
-    // Calculate "Nice" Y-Axis Range
-    final allValues = spots.map((s) => s.y).toList();
-    double rawMin = allValues.reduce(min);
-    double rawMax = allValues.reduce(max);
-    
-    // Add tight padding
-    rawMin = rawMin * 0.99;
-    rawMax = rawMax * 1.02; // Minimal room for tooltips
-    
-    double priceRange = rawMax - rawMin;
-    double interval;
-    if (priceRange <= 100) interval = 20;
-    else if (priceRange <= 250) interval = 50;
-    else if (priceRange <= 500) interval = 100;
-    else interval = 200;
-
-    double minY = (rawMin / interval).floorToDouble() * interval;
-    double maxY = (rawMax / interval).ceilToDouble() * interval;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              l10n.priceTrend,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
-            ),
-            Row(
-              children: [
-                _buildToggle(ref, '1M', rangeValue == ChartRange.oneMonth, ChartRange.oneMonth),
-                _buildToggle(ref, '6M', rangeValue == ChartRange.sixMonths, ChartRange.sixMonths),
-                _buildToggle(ref, '1Y', rangeValue == ChartRange.oneYear, ChartRange.oneYear),
-                _buildToggle(ref, 'All', rangeValue == ChartRange.all, ChartRange.all),
-              ],
-            )
-          ],
-        ),
-        const SizedBox(height: 16),
-        Container(
-          height: 250,
-          padding: const EdgeInsets.only(top: 24, right: 24, bottom: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: LineChart(
-            LineChartData(
-              minY: minY,
-              maxY: maxY,
-              gridData: FlGridData(
-                show: true,
-                drawVerticalLine: false,
-                horizontalInterval: interval,
-                getDrawingHorizontalLine: (value) => FlLine(
-                  color: Colors.grey.withValues(alpha: 0.05),
-                  strokeWidth: 1,
-                ),
-              ),
-              titlesData: FlTitlesData(
-                show: true,
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 30,
-                    interval: _getBottomInterval(rangeValue),
-                    getTitlesWidget: (val, meta) {
-                      final date = DateTime.fromMillisecondsSinceEpoch(
-                        (val * 1000 * 60 * 60 * 24 + firstTimestamp).toInt(),
-                      );
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          _getBottomTitle(date, rangeValue, l10n.locale.languageCode),
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w600),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    interval: interval,
-                    getTitlesWidget: (val, meta) => Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: Text(
-                        '₹${NumberFormat("#,###").format(val.toInt())}',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    reservedSize: 52,
-                  ),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              lineTouchData: LineTouchData(
-                touchTooltipData: LineTouchTooltipData(
-                  getTooltipColor: (spot) => const Color(0xFF1E222D),
-                  fitInsideHorizontally: true,
-                  fitInsideVertically: true,
-                  getTooltipItems: (touchedSpots) {
-                    return touchedSpots.map((spot) {
-                      final date = DateTime.fromMillisecondsSinceEpoch(
-                        (spot.x * 1000 * 60 * 60 * 24 + firstTimestamp).toInt(),
-                      );
-                      return LineTooltipItem(
-                        '${DateFormat('d MMM', l10n.locale.languageCode).format(date)}\n',
-                        const TextStyle(color: Colors.white70, fontSize: 10),
-                        children: [
-                          TextSpan(
-                            text: '₹${NumberFormat("#,###").format(spot.y.toInt())}',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                          ),
-                        ],
-                      );
-                    }).toList();
-                  },
-                ),
-              ),
-              lineBarsData: [
-                LineChartBarData(
-                  spots: spots,
-                  isCurved: true,
-                  color: ThemeConstants.forestGreen,
-                  barWidth: 3.5,
-                  dotData: const FlDotData(show: false),
-                  belowBarData: BarAreaData(
-                    show: true,
-                    gradient: LinearGradient(
-                      colors: [
-                        ThemeConstants.forestGreen.withValues(alpha: 0.15),
-                        ThemeConstants.forestGreen.withValues(alpha: 0.0),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  double _getBottomInterval(ChartRange range) {
-    switch (range) {
-      case ChartRange.oneMonth: return 7; // Weekly
-      case ChartRange.sixMonths: return 30; // Monthly
-      case ChartRange.oneYear: return 60; // Every 2 months
-      case ChartRange.all: return 365; // Yearly
-    }
-  }
-
-  String _getBottomTitle(DateTime date, ChartRange range, String locale) {
-    if (range == ChartRange.oneMonth) return DateFormat('d MMM', locale).format(date);
-    if (range == ChartRange.all) return date.year.toString();
-    return DateFormat('MMM', locale).format(date);
-  }
-
-  Widget _buildToggle(WidgetRef ref, String label, bool active, ChartRange range) {
-    return GestureDetector(
-      onTap: () => ref.read(chartRangeProvider.notifier).state = range,
-      child: Container(
-        margin: const EdgeInsets.only(left: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? ThemeConstants.forestGreen : Colors.grey.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? Colors.white : Colors.grey,
-            fontSize: 12,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SizeTransition(sizeFactor: animation, child: child),
       ),
-    );
-  }
-
-  Widget _buildPricePerformanceSection(BuildContext context, List<AuctionData> prices, PriceAnalyticsService analytics, AppLocalizations l10n) {
-    final performance = analytics.getPricePerformance(prices);
-    if (performance.isEmpty) return const SizedBox.shrink();
-
-    // Take last 30 points for visibility
-    final displayPoints = performance.length > 30 
-        ? performance.sublist(performance.length - 30) 
-        : performance;
-
-    final firstTimestamp = displayPoints.first.date.millisecondsSinceEpoch.toDouble();
-    
-    List<FlSpot> actualSpots = [];
-    List<FlSpot> smaSpots = [];
-    List<FlSpot> upperSpots = [];
-    List<FlSpot> lowerSpots = [];
-
-    for (var p in displayPoints) {
-      final x = (p.date.millisecondsSinceEpoch.toDouble() - firstTimestamp) / (1000 * 60 * 60 * 24);
-      actualSpots.add(FlSpot(x, p.actual));
-      smaSpots.add(FlSpot(x, p.sma));
-      upperSpots.add(FlSpot(x, p.upperBand));
-      lowerSpots.add(FlSpot(x, p.lowerBand));
-    }
-
-    // Calculate "Nice" Y-Axis Range
-    final allValues = displayPoints.expand((p) => [p.actual, p.sma, p.upperBand, p.lowerBand])
-        .where((v) => v > 0).toList();
-    if (allValues.isEmpty) return const SizedBox.shrink();
-
-    double rawMin = allValues.reduce(min);
-    double rawMax = allValues.reduce(max);
-    
-    // Add tight padding
-    rawMin = rawMin * 0.99;
-    rawMax = rawMax * 1.02;
-    
-    double range = rawMax - rawMin;
-    double interval;
-    if (range <= 100) interval = 20;
-    else if (range <= 250) interval = 50;
-    else if (range <= 500) interval = 100;
-    else interval = 100;
-
-    double minY = (rawMin / interval).floorToDouble() * interval;
-    double maxY = (rawMax / interval).ceilToDouble() * interval;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.analytics_outlined, color: ThemeConstants.forestGreen, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              l10n.pricePerformance,
-              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.translate('sma_volatility_label'),
-          style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 16),
-        RepaintBoundary(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                )
-              ],
-            ),
-            child: Column(
-              children: [
-                // Legend - Responsive layout
-                Wrap(
-                  spacing: 20,
-                  runSpacing: 10,
-                  alignment: WrapAlignment.center,
-                  children: [
-                     _buildLegendItem(ThemeConstants.smaGold, l10n.translate('moving_average_label')),
-                     _buildLegendItem(const Color(0xFF26A69A), l10n.translate('actual_label')),
-                     _buildLegendItem(const Color(0xFF26A69A).withValues(alpha: 0.2), l10n.translate('volatility_bands_label')),
+      child: isSyncing
+          ? Container(
+              key: const ValueKey('syncing_banner'),
+              margin: const EdgeInsets.only(top: 16, bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ThemeConstants.forestGreen.withValues(alpha: 0.08),
+                    ThemeConstants.forestGreen.withValues(alpha: 0.04),
                   ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  height: 250,
-                  child: LineChart(
-                    LineChartData(
-                      minY: minY,
-                      maxY: maxY,
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        horizontalInterval: interval,
-                        getDrawingHorizontalLine: (value) => FlLine(
-                          color: Colors.grey.withValues(alpha: 0.08),
-                          strokeWidth: 1,
-                        ),
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 30,
-                            interval: 7,
-                            getTitlesWidget: (val, meta) {
-                              final date = DateTime.fromMillisecondsSinceEpoch(
-                                (val * 1000 * 60 * 60 * 24 + firstTimestamp).toInt(),
-                              );
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 10.0),
-                                child: Text(
-                                  DateFormat('d MMM', l10n.locale.languageCode).format(date),
-                                  style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.w600),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            interval: interval,
-                            getTitlesWidget: (val, meta) => Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: Text(
-                                '₹${NumberFormat("#,###").format(val.toInt())}',
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            reservedSize: 52,
-                          ),
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      lineTouchData: LineTouchData(
-                        touchTooltipData: LineTouchTooltipData(
-                          getTooltipColor: (spot) => const Color(0xFF1E222D),
-                          fitInsideHorizontally: true,
-                          fitInsideVertically: true,
-                          getTooltipItems: (touchedSpots) {
-                            return touchedSpots.map((spot) {
-                              if (spot.barIndex == 2) { // Actual
-                                return LineTooltipItem(
-                                  '${l10n.actualPrice}: ₹${NumberFormat("#,###").format(spot.y.toInt())}',
-                                  const TextStyle(color: Color(0xFF26A69A), fontWeight: FontWeight.bold, fontSize: 11),
-                                );
-                              }
-                              if (spot.barIndex == 3) { // SMA
-                                return LineTooltipItem(
-                                  '${l10n.translate('moving_average_label')}: ₹${NumberFormat("#,###").format(spot.y.toInt())}',
-                                  const TextStyle(color: ThemeConstants.smaGold, fontWeight: FontWeight.bold, fontSize: 11),
-                                );
-                              }
-                              return null;
-                            }).toList().whereType<LineTooltipItem>().toList();
-                          },
-                        ),
-                      ),
-                      lineBarsData: [
-                        // VOLATILITY BAND (UPPER)
-                        LineChartBarData(
-                          spots: upperSpots,
-                          isCurved: true,
-                          color: Colors.transparent,
-                          barWidth: 0,
-                          dotData: const FlDotData(show: false),
-                        ),
-                        // VOLATILITY BAND (LOWER)
-                        LineChartBarData(
-                          spots: lowerSpots,
-                          isCurved: true,
-                          color: Colors.transparent,
-                          barWidth: 0,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: const Color(0xFF26A69A).withValues(alpha: 0.1),
-                          ),
-                        ),
-                        // ACTUAL PRICE
-                        LineChartBarData(
-                          spots: actualSpots,
-                          isCurved: true,
-                          color: const Color(0xFF26A69A),
-                          barWidth: 2.5,
-                          dotData: const FlDotData(show: false),
-                          // Subtle belowBarData for Actual Price
-                          belowBarData: BarAreaData(
-                            show: true,
-                            gradient: LinearGradient(
-                              colors: [
-                                const Color(0xFF26A69A).withValues(alpha: 0.1),
-                                const Color(0xFF26A69A).withValues(alpha: 0.0),
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
-                        // SMA
-                        LineChartBarData(
-                          spots: smaSpots,
-                          isCurved: true,
-                          color: ThemeConstants.smaGold,
-                          barWidth: 2.5,
-                          dotData: const FlDotData(show: false),
-                        ),
-                      ],
-                      betweenBarsData: [
-                        BetweenBarsData(
-                          fromIndex: 0, // Upper
-                          toIndex: 1,   // Lower
-                          color: const Color(0xFF26A69A).withValues(alpha: 0.12),
-                        ),
-                      ],
-                    ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: ThemeConstants.forestGreen.withValues(alpha: 0.15),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ThemeConstants.forestGreen.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildInfoFooter(l10n.translate('moving_average_label'), l10n.translate('moving_average_desc')),
-                    const SizedBox(width: 20),
-                    _buildInfoFooter(l10n.translate('volatility_bands_label'), l10n.translate('volatility_bands_desc')),
-                  ],
-                )
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLegendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.w600)),
-      ],
-    );
-  }
-
-  Widget _buildInfoFooter(String title, String desc) {
-    return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(color: ThemeConstants.textDark, fontSize: 9, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(desc, style: const TextStyle(color: Colors.grey, fontSize: 9, height: 1.4)),
-        ],
-      ),
-    );
-  }
-
-
-  Widget _buildWeeklyAuctionSummary(BuildContext context, List<AuctionData> prices, AppLocalizations l10n) {
-    if (prices.isEmpty) return const SizedBox.shrink();
-
-    // Grouping by day and taking last 7 days with data
-    final Map<String, List<AuctionData>> grouped = {};
-    for (var p in prices) {
-      final key = DateFormat('yyyy-MM-dd').format(p.date);
-      if (!grouped.containsKey(key)) grouped[key] = [];
-      grouped[key]!.add(p);
-      if (grouped.length >= 7 && !grouped.containsKey(key)) break;
-    }
-    
-    final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
-    final displayKeys = sortedKeys.take(7);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.weeklyAuctions,
-          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: ThemeConstants.textDark),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: displayKeys.length,
-            separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey.withValues(alpha: 0.1), indent: 20, endIndent: 20),
-            itemBuilder: (context, index) {
-              final key = displayKeys.elementAt(index);
-              final dayAuctions = grouped[key]!;
-              // "Last entry" in the day (latest chronologically)
-              final lastAuction = dayAuctions.first; 
-              final date = lastAuction.date;
-
-              return ListTile(
-                onTap: () => _showDayAuctionsDetail(context, date, dayAuctions, l10n),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                leading: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: ThemeConstants.primaryGreen.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(DateFormat('dd', l10n.locale.languageCode).format(date), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: ThemeConstants.forestGreen)),
-                      Text(DateFormat('MMM', l10n.locale.languageCode).format(date).toUpperCase(), style: const TextStyle(fontSize: 9, color: ThemeConstants.forestGreen, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-                title: Text(
-                  DateFormat('EEEE', l10n.locale.languageCode).format(date),
-                  style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  lastAuction.auctioneer,
-                  style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '₹${NumberFormat("#,###").format(lastAuction.avgPrice.toInt())}',
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen, fontSize: 16),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showDayAuctionsDetail(BuildContext context, DateTime date, List<AuctionData> auctions, AppLocalizations l10n) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Column(
-          children: [
-            Text(DateFormat('dd MMMM yyyy', l10n.locale.languageCode).format(date), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen)),
-            Text(DateFormat('EEEE', l10n.locale.languageCode).format(date), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey)),
-          ],
-        ),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView.separated(
-            shrinkWrap: true,
-            itemCount: auctions.length,
-            separatorBuilder: (context, index) => const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Divider(height: 1),
-            ),
-            itemBuilder: (context, index) {
-              final auction = auctions[index];
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                     decoration: BoxDecoration(
-                       color: ThemeConstants.primaryGreen.withValues(alpha: 0.1),
-                       borderRadius: BorderRadius.circular(8),
-                     ),
-                     child: Text(
-                       auction.auctioneer,
-                       style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen, fontSize: 12),
-                     ),
-                   ),
-                   const SizedBox(height: 16),
-                   _buildPopupDetailRow(l10n.avgPrice, '₹${NumberFormat("#,###").format(auction.avgPrice.toInt())}', ThemeConstants.forestGreen),
-                   const SizedBox(height: 12),
-                   _buildPopupDetailRow(l10n.totalQtyLabel, '${NumberFormat("#,###").format((auction.quantityArrived ?? 0.0).toInt())} Kg', Colors.black87),
-                   const SizedBox(height: 12),
-                   _buildPopupDetailRow(l10n.qtySoldLabel, '${NumberFormat("#,###").format(auction.quantity.toInt())} Kg', Colors.black87),
-                   const SizedBox(height: 12),
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                     children: [
-                       _buildSmallStat(l10n.min, '₹${NumberFormat("#,###").format(auction.avgPrice.toInt())}'),
-                       _buildSmallStat(l10n.max, '₹${NumberFormat("#,###").format(auction.maxPrice.toInt())}'),
-                     ],
-                   ),
                 ],
-              );
-            },
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: ThemeConstants.primaryGreen, fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPopupDetailRow(String label, String value, Color color) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: color)),
-      ],
-    );
-  }
-
-  Widget _buildSmallStat(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-      ],
-    );
-  }
-
-  Widget _buildWeeklySnapshotCard(BuildContext context, MarketInsights insights, AppLocalizations l10n) {
-    final isUp = insights.weeklyMomentum >= 0;
-    final momentumText = "${isUp ? '+' : ''}${insights.weeklyMomentum.toStringAsFixed(1)}%";
-    
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.weeklyMarketSnapshot,
-                  style: GoogleFonts.outfit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: ThemeConstants.textDark,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Divider(height: 1, color: Color(0xFFF3F0EC)),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(
-                      isUp ? Icons.trending_up : Icons.trending_down,
-                      color: isUp ? Colors.green : Colors.red,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      l10n.thisWeek,
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: ThemeConstants.textDark,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      momentumText,
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: isUp ? Colors.green : Colors.red,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      isUp ? l10n.upFromLastWeek : l10n.downFromLastWeek,
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildSnapshotStat(l10n.min, "₹${insights.weeklyMin.toStringAsFixed(0)}"),
-                    _buildSnapshotStat(l10n.avgPriceLabel, "₹${insights.weeklyAvg.toStringAsFixed(0)}"),
-                    _buildSnapshotStat(l10n.max, "₹${insights.weeklyMax.toStringAsFixed(0)}"),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // Today Price Badge
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F7F2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      "${l10n.todayPriceLabel} ₹${(insights.stats['current'] ?? insights.weeklyAvg).toStringAsFixed(0)}",
-                      style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.bold,
-                        color: ThemeConstants.primaryGreen,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Range Slider Visualization
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      height: 10,
-                      width: double.infinity,
+              ),
+              child: Row(
+                children: [
+                  RotationTransition(
+                    turns: _syncIconController,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEDEDED),
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                    ),
-                    Align(
-                      alignment: Alignment(insights.pricePositionInWeeklyRange * 2 - 1, 0),
-                      child: Container(
-                        height: 20,
-                        width: 20,
-                        decoration: BoxDecoration(
-                          color: ThemeConstants.textDark,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.2),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(l10n.min, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                    Text(l10n.max, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("₹${insights.weeklyMin.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    Text("₹${insights.weeklyMax.toStringAsFixed(0)}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Divider(height: 1, color: Color(0xFFF3F0EC)),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFE8F5E9),
+                        color: ThemeConstants.forestGreen.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.check, size: 14, color: Colors.green),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _getWeeklyPriceMessage(insights, l10n),
-                        style: GoogleFonts.outfit(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: ThemeConstants.textDark,
-                        ),
+                      child: const Icon(
+                        Icons.sync,
+                        size: 16,
+                        color: ThemeConstants.forestGreen,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F5F0),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.calendar_today, size: 14, color: Colors.brown),
-                      const SizedBox(width: 8),
-                      Text(
-                        l10n.weeklyVolatilityLabel,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _getWeeklyVolatilityLabel(insights.weeklyVolatility, l10n),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: ThemeConstants.textDark,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.translate('syncing_server'),
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            color: ThemeConstants.forestGreen,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      ),
-                    ],
+                        Text(
+                          l10n.initialSyncHint,
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            color: ThemeConstants.forestGreen.withValues(alpha: 0.7),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+                ],
+              ),
+            )
+          : const SizedBox.shrink(key: ValueKey('empty_banner')),
     );
   }
 
-  Widget _buildSnapshotStat(String label, String value) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: ThemeConstants.textDark)),
-      ],
-    );
-  }
-
-  String _getWeeklyPriceMessage(MarketInsights insights, AppLocalizations l10n) {
-    if (insights.pricePositionInWeeklyRange > 0.8) return l10n.tradingNearHigh;
-    if (insights.pricePositionInWeeklyRange < 0.2) return l10n.tradingNearLow;
-    return l10n.tradingNearMid;
-  }
-
-  String _getWeeklyVolatilityLabel(double volatility, AppLocalizations l10n) {
-    if (volatility > 3.0) return l10n.volatilityHigh;
-    if (volatility > 1.5) return l10n.volatilityModerate;
-    return l10n.volatilityLow;
-  }
-
-  void _showExplanationDialog(BuildContext context, String title, String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-        title: Row(
-          children: [
-            const Icon(Icons.info_outline, color: ThemeConstants.forestGreen),
-            const SizedBox(width: 12),
-            Text(title, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, color: ThemeConstants.forestGreen)),
-          ],
-        ),
-        content: Text(message, style: GoogleFonts.outfit(fontSize: 16, height: 1.5, color: Colors.blueGrey.shade800)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK', style: TextStyle(color: ThemeConstants.primaryGreen, fontWeight: FontWeight.bold, fontSize: 16)),
-          ),
-        ],
+  Widget _buildLivePulsePopup(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    return Center(
+      child: LivePulseIndicator(
+        text: l10n.translate('live_auction_now'),
+        onTap: () => ref.read(navigationProvider.notifier).state = 2,
       ),
     );
   }

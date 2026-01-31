@@ -35,12 +35,13 @@ class _AppInfoDialogState extends ConsumerState<AppInfoDialog> {
   }
 
   Future<void> _toggleNotifications(bool value) async {
+    final l10n = AppLocalizations.of(context);
     if (value) {
       final granted = await NotificationService().requestPermissions();
       if (!granted) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Notification permissions denied.')),
+            SnackBar(content: Text(l10n.notificationDenied)),
           );
         }
         return;
@@ -148,7 +149,7 @@ class _AppInfoDialogState extends ConsumerState<AppInfoDialog> {
                     )
                   : Switch.adaptive(
                       value: _notificationsEnabled,
-                      activeColor: ThemeConstants.forestGreen,
+                      activeTrackColor: ThemeConstants.forestGreen,
                       onChanged: _toggleNotifications,
                     ),
               ],
@@ -169,7 +170,7 @@ class _AppInfoDialogState extends ConsumerState<AppInfoDialog> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 child: Text(
-                  'OK',
+                  l10n.ok,
                   style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
                 ),
               ),

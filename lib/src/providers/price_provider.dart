@@ -11,13 +11,16 @@ import 'package:cardamom_analytics/src/services/price_analytics_service.dart';
 
 part 'price_provider.g.dart';
 
-enum ChartRange { oneMonth, sixMonths, oneYear, all }
+enum ChartRange { oneMonth, sixMonths, oneYear, fiveYears }
 
 final chartRangeProvider = StateProvider<ChartRange>((ref) => ChartRange.oneMonth);
 
 /// Global trigger to notify all providers that a data sync has occurred.
 /// Incrementing this will cause all auction data providers to invalidate/re-fetch.
 final syncTriggerProvider = StateProvider<int>((ref) => 0);
+
+/// Global loading state for background sync processes.
+final syncLoadingProvider = StateProvider<bool>((ref) => false);
 
 @riverpod
 DatabaseHelper databaseHelper(Ref ref) {
@@ -75,6 +78,8 @@ Future<List<AuctionData>> historicalFullPrices(Ref ref) async {
     ref.invalidate(lastSyncTimeProvider);
   }).catchError((e) {
     debugPrint("Startup sync failed: $e");
+  }).whenComplete(() {
+    ref.read(syncLoadingProvider.notifier).state = false;
   });
 
   return _deduplicate(localData);
@@ -100,6 +105,8 @@ Future<List<AuctionData>> dailyPrices(Ref ref) async {
     }
   }).catchError((e) {
     debugPrint("Background sync failed: $e");
+  }).whenComplete(() {
+    ref.read(syncLoadingProvider.notifier).state = false;
   });
 
   return _deduplicate(localData);

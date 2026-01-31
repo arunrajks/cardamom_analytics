@@ -3,10 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cardamom_analytics/src/ui/theme/theme_constants.dart';
 import 'package:cardamom_analytics/src/utils/app_preferences.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
-import 'package:cardamom_analytics/src/services/notification_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cardamom_analytics/src/services/background_sync_worker.dart';
-import 'package:workmanager/workmanager.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -64,6 +60,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _syncProfileViaEmail() async {
+    final l10n = AppLocalizations.of(context);
     if (_formKey.currentState!.validate()) {
       final body = "Cardamom Analytics - User Registration\n\n"
           "Name: ${_nameController.text}\n"
@@ -91,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Could not open email app.")),
+            SnackBar(content: Text(l10n.couldNotOpenEmail)),
           );
         }
       }
@@ -174,9 +171,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: ThemeConstants.forestGreen.withOpacity(0.1)),
+                      border: Border.all(color: ThemeConstants.forestGreen.withValues(alpha: 0.1)),
                     ),
                     child: Row(
                       children: [
@@ -223,9 +220,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _syncProfileViaEmail,
                       icon: const Icon(Icons.alternate_email),
-                      label: const Text(
-                        "Register & Sync to Cloud",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      label: Text(
+                        l10n.registerSyncCloud,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ThemeConstants.forestGreen,
@@ -275,7 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

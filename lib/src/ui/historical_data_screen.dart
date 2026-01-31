@@ -5,7 +5,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cardamom_analytics/src/providers/price_provider.dart';
 import 'package:cardamom_analytics/src/models/auction_data.dart';
-import 'package:cardamom_analytics/src/utils/app_dates.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cardamom_analytics/src/ui/theme/theme_constants.dart';
@@ -27,8 +26,6 @@ class HistoricalDataScreen extends ConsumerStatefulWidget {
 class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
   DateTime? _fromDate;
   DateTime? _toDate;
-  bool _isImporting = false;
-  final double _importProgress = 0.0;
   String? _statusMessage;
   HistoricalPlotType _plotType = HistoricalPlotType.avgPrice;
 
@@ -82,7 +79,9 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
           if (data.isEmpty) {
             return _buildEmptyState(l10n);
           }
-          return _buildMainContent(data, l10n);
+          // Also get full prices for accurate chart calculations (SMA/Bands)
+          final fullPrices = ref.watch(historicalFullPricesProvider).value ?? data;
+          return _buildMainContent(data, fullPrices, l10n);
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
@@ -115,7 +114,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     );
   }
 
-  Widget _buildMainContent(List<AuctionData> data, AppLocalizations l10n) {
+  Widget _buildMainContent(List<AuctionData> data, List<AuctionData> fullPrices, AppLocalizations l10n) {
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
@@ -134,7 +133,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: _buildChartWithBadge(data, l10n),
+                child: _buildChartWithBadge(data, fullPrices, l10n),
               ),
               const SizedBox(height: 12),
               _buildRangeStatsSummary(data, l10n),
@@ -152,6 +151,9 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
               const SizedBox(height: 24),
             ],
           ),
+        ),
+        SliverToBoxAdapter(
+          child: _buildLogHeader(l10n),
         ),
         SliverPadding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -262,7 +264,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
           ),
           boxShadow: isSelected ? [
             BoxShadow(
-              color: ThemeConstants.primaryGreen.withOpacity(0.2),
+              color: ThemeConstants.primaryGreen.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 4),
             )
@@ -280,7 +282,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     );
   }
 
-  Widget _buildChartWithBadge(List<AuctionData> data, AppLocalizations l10n) {
+  Widget _buildChartWithBadge(List<AuctionData> data, List<AuctionData> fullPrices, AppLocalizations l10n) {
     if (data.length < 2) return const SizedBox.shrink();
 
     final days = _toDate != null && _fromDate != null ? _toDate!.difference(_fromDate!).inDays : 
@@ -293,24 +295,26 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     return Stack(
       children: [
         Container(
-          height: 220,
-          padding: const EdgeInsets.fromLTRB(8, 30, 8, 8),
+          height: 240,
+          padding: const EdgeInsets.fromLTRB(4, 40, 4, 8),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.05)),
           ),
-          child: _buildChart(data),
+          child: _buildChart(data, fullPrices),
         ),
         Positioned(
-          top: 10,
-          right: 10,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(rangeLabel, style: const TextStyle(fontSize: 10, color: Colors.grey)),
+          top: 16,
+          left: 20,
+          child: Text(
+            rangeLabel.toUpperCase(), 
+            style: GoogleFonts.outfit(
+              fontSize: 10, 
+              fontWeight: FontWeight.bold, 
+              color: Colors.grey.withValues(alpha: 0.4),
+              letterSpacing: 1.0,
+            )
           ),
         ),
       ],
@@ -342,65 +346,138 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFFDF7F2),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: IntrinsicHeight(
-          child: Row(
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildElegantStatCard(
+              l10n.highestInRange, 
+              "$prefix${NumberFormat("#,##0").format(maxVal)}$unit", 
+              Icons.trending_up, 
+              ThemeConstants.primaryGreen
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildElegantStatCard(
+              l10n.lowestInRange, 
+              "$prefix${NumberFormat("#,##0").format(minVal)}$unit", 
+              Icons.trending_down, 
+              ThemeConstants.alertRed
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildElegantStatCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(l10n.highestInRange, style: GoogleFonts.outfit(fontSize: 13, color: Colors.black87))),
-                      Text("$prefix${NumberFormat("#,##0").format(maxVal)}$unit", style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ),
-              VerticalDivider(color: Colors.grey.shade300, width: 1, indent: 12, endIndent: 12),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                  child: Row(
-                    children: [
-                      Expanded(child: Text(l10n.lowestInRange, style: GoogleFonts.outfit(fontSize: 13, color: Colors.black87))),
-                      Text("$prefix${NumberFormat("#,##0").format(minVal)}$unit", style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
+              Icon(icon, size: 14, color: color.withValues(alpha: 0.7)),
+              const SizedBox(width: 6),
+              Text(
+                label.toUpperCase(),
+                style: GoogleFonts.outfit(
+                  fontSize: 10, 
+                  fontWeight: FontWeight.bold, 
+                  color: Colors.grey.shade500,
+                  letterSpacing: 0.5,
                 ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 18, 
+              fontWeight: FontWeight.bold, 
+              color: ThemeConstants.textDark,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTrendInsight(List<AuctionData> data, AppLocalizations l10n) {
-    if (_plotType == HistoricalPlotType.quantity) return const SizedBox.shrink();
+    if (_plotType == HistoricalPlotType.quantity || data.isEmpty) return const SizedBox.shrink();
 
-    final avg = data.isEmpty ? 0 : data.fold<double>(0, (sum, e) {
-       return sum + (_plotType == HistoricalPlotType.maxPrice ? e.maxPrice : e.avgPrice);
-    }) / data.length;
+    // Use the latest available price for comparison instead of the overall average
+    final latestVal = _plotType == HistoricalPlotType.maxPrice ? data.first.maxPrice : data.first.avgPrice;
     
-    // Assume 10-year historical average is around 1800 for context if not enough data
     const historicalNorm = 1800.0;
-    final isAbove = avg > historicalNorm;
+    final isAbove = latestVal > historicalNorm;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isAbove ? Colors.green.withValues(alpha: 0.05) : Colors.orange.withValues(alpha: 0.05),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isAbove ? Icons.trending_up : Icons.trending_down, 
+              size: 16, 
+              color: isAbove ? ThemeConstants.primaryGreen : ThemeConstants.actionOrange
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isAbove ? l10n.aboveAverage : l10n.belowAverage,
+                style: GoogleFonts.outfit(
+                  fontSize: 13, 
+                  fontWeight: FontWeight.w500,
+                  color: isAbove ? ThemeConstants.primaryGreen.withValues(alpha: 0.8) : ThemeConstants.actionOrange.withValues(alpha: 0.8)
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLogHeader(AppLocalizations l10n) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(isAbove ? Icons.north_east : Icons.south_east, size: 14, color: Colors.grey),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              isAbove ? l10n.aboveAverage : l10n.belowAverage,
-              style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey.shade700),
+          Row(
+            children: [
+              const Icon(Icons.list_alt_rounded, color: ThemeConstants.textDark, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                l10n.translate('auction_log'),
+                style: GoogleFonts.outfit(
+                  fontSize: 18, 
+                  fontWeight: FontWeight.bold, 
+                  color: ThemeConstants.textDark
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            l10n.translate('bold_average_disclaimer'),
+            style: GoogleFonts.outfit(
+              fontSize: 11, 
+              color: Colors.grey.shade500,
+              fontStyle: FontStyle.italic
             ),
           ),
         ],
@@ -425,7 +502,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
           ],
         ),
         child: Padding(
@@ -538,7 +615,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
                     _buildDetailRow(l10n.lots, "${auction.lots}", Icons.inventory_2_outlined),
                   const Divider(height: 32),
                   _buildDetailRow(l10n.latestAuctions, auction.auctioneer, Icons.business),
-                  _buildDetailRow(l10n.translate('date'), DateFormat('dd MMM yyyy').format(auction.date), Icons.calendar_today),
+                  _buildDetailRow(l10n.dateLabel, DateFormat('dd MMM yyyy', l10n.locale.languageCode).format(auction.date), Icons.calendar_today),
                 ],
               ),
             ),
@@ -572,7 +649,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, size: 20, color: color ?? ThemeConstants.primaryGreen.withOpacity(0.7)),
+            child: Icon(icon, size: 20, color: color ?? ThemeConstants.primaryGreen.withValues(alpha: 0.7)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -600,7 +677,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     );
   }
 
-  Widget _buildChart(List<AuctionData> data) {
+  Widget _buildChart(List<AuctionData> data, List<AuctionData> fullPrices) {
     // Sort chronological for calculations
     final chronData = List<AuctionData>.from(data)..sort((a,b) => a.date.compareTo(b.date));
     
@@ -617,7 +694,20 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     List<PricePerformancePoint> performance = [];
     
     if (isPrice) {
-      performance = PriceAnalyticsService().getPricePerformance(chronData, period: 7, useMaxPrice: useMax);
+      // Use FULL history for calculation to avoid gaps at the start of the visible range
+      final chronFull = List<AuctionData>.from(fullPrices)..sort((a,b) => a.date.compareTo(b.date));
+      final allPerformance = PriceAnalyticsService().getPricePerformance(chronFull, period: 7, useMaxPrice: useMax);
+      
+      // Filter for the visible date range
+      if (_fromDate != null || _toDate != null) {
+        performance = allPerformance.where((p) => 
+          (p.date.isAfter(_fromDate!.subtract(const Duration(seconds: 1)))) && 
+          (p.date.isBefore((_toDate ?? DateTime.now()).add(const Duration(days: 1))))
+        ).toList();
+      } else {
+        performance = allPerformance;
+      }
+
       actualSpots = performance.map((p) => FlSpot(performance.indexOf(p).toDouble(), p.actual)).toList();
       smaSpots = performance.where((p) => p.sma > 0).map((p) => FlSpot(performance.indexOf(p).toDouble(), p.sma)).toList();
       upperSpots = performance.where((p) => p.upperBand > 0).map((p) => FlSpot(performance.indexOf(p).toDouble(), p.upperBand)).toList();
@@ -770,7 +860,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
             LineChartBarData(
               spots: upperSpots,
               isCurved: true,
-              color: ThemeConstants.softGreen.withOpacity(0.5),
+              color: ThemeConstants.softGreen.withValues(alpha: 0.5),
               barWidth: 1,
               dotData: const FlDotData(show: false),
             ),
@@ -779,12 +869,12 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
             LineChartBarData(
               spots: lowerSpots,
               isCurved: true,
-              color: ThemeConstants.softGreen.withOpacity(0.5),
+              color: ThemeConstants.softGreen.withValues(alpha: 0.5),
               barWidth: 1,
               dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                color: ThemeConstants.softGreen.withOpacity(0.2),
+                color: ThemeConstants.softGreen.withValues(alpha: 0.2),
                 cutOffY: 0,
                 applyCutOffY: false,
               ),
@@ -794,7 +884,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
             LineChartBarData(
               spots: smaSpots,
               isCurved: true,
-              color: ThemeConstants.smaGold.withOpacity(0.6),
+              color: ThemeConstants.smaGold.withValues(alpha: 0.6),
               barWidth: 1.5,
               dotData: const FlDotData(show: false),
             ),
@@ -809,7 +899,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
             belowBarData: BarAreaData(
               show: true,
               gradient: LinearGradient(
-                colors: [ThemeConstants.secondaryGreen.withOpacity(0.1), ThemeConstants.secondaryGreen.withOpacity(0)],
+                colors: [ThemeConstants.secondaryGreen.withValues(alpha: 0.1), ThemeConstants.secondaryGreen.withValues(alpha: 0)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -820,7 +910,7 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
           horizontalLines: [
             HorizontalLine(
               y: periodAvg,
-              color: ThemeConstants.secondaryGreen.withOpacity(0.3),
+              color: ThemeConstants.secondaryGreen.withValues(alpha: 0.3),
               strokeWidth: 1,
               dashArray: [5, 5],
             ),
@@ -849,7 +939,6 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
     final l10n = AppLocalizations.of(context);
     try {
       setState(() {
-         _isImporting = true; // Use importing state for progress bar
          _statusMessage = l10n.syncingServer;
       });
       
@@ -858,7 +947,6 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
       
       if (mounted) {
         setState(() {
-           _isImporting = false;
            _statusMessage = l10n.syncComplete(count);
         });
       }
@@ -870,7 +958,6 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
       
     } catch (e) {
       setState(() {
-         _isImporting = false;
          _statusMessage = "${l10n.syncFailed} $e";
       });
     }
@@ -906,7 +993,6 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
   Future<void> _reseedData() async {
     final l10n = AppLocalizations.of(context);
     setState(() {
-      _isImporting = true;
       _statusMessage = l10n.reseedAttempt;
     });
     
@@ -918,12 +1004,10 @@ class _HistoricalDataScreenState extends ConsumerState<HistoricalDataScreen> {
       
       ref.invalidate(historicalPricesProvider);
       setState(() {
-        _isImporting = false;
         _statusMessage = l10n.reseedComplete(count);
       });
     } catch (e) {
       setState(() {
-        _isImporting = false;
         _statusMessage = "${l10n.reseedFailed} $e";
       });
     }

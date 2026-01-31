@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
@@ -8,12 +7,14 @@ import 'package:cardamom_analytics/src/providers/locale_provider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:cardamom_analytics/src/services/notification_service.dart';
 import 'package:cardamom_analytics/src/services/background_sync_worker.dart';
-import 'package:cardamom_analytics/src/services/data_seeder_service.dart';
 import 'package:cardamom_analytics/src/ui/theme/theme_constants.dart';
 import 'package:cardamom_analytics/src/providers/price_provider.dart';
 import 'package:cardamom_analytics/src/ui/dashboard_screen.dart';
 import 'package:cardamom_analytics/src/ui/analytics_screen.dart';
 import 'package:cardamom_analytics/src/ui/historical_data_screen.dart';
+import 'package:cardamom_analytics/src/ui/live_pulse_screen.dart';
+import 'package:cardamom_analytics/src/providers/navigation_provider.dart';
+import 'package:cardamom_analytics/src/services/data_seeder_service.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -34,14 +35,15 @@ void main() async {
   // Initialize Workmanager for background sync
   Workmanager().initialize(
     callbackDispatcher,
-    isInDebugMode: kDebugMode,
   );
 
   // Register a periodic task for new auction checks
   Workmanager().registerPeriodicTask(
     "periodic-auction-check",
     "checkNewAuctions",
-    frequency: const Duration(minutes: 30),
+    frequency: const Duration(minutes: 15),
+    existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
+    initialDelay: const Duration(minutes: 5),
     constraints: Constraints(
       networkType: NetworkType.connected,
     ),
@@ -95,34 +97,64 @@ class _MyAppState extends ConsumerState<MyApp> {
   }
 }
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  int _currentIndex = 0;
-  
+class _MainScreenState extends ConsumerState<MainScreen> {
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    final initialIndex = ref.read(navigationProvider);
+    _pageController = PageController(initialPage: initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   final List<Widget> _screens = const [
     DashboardScreen(),
     AnalyticsScreen(),
+    LivePulseScreen(),
     HistoricalDataScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final currentIndex = ref.watch(navigationProvider);
+
+    // Sync PageController with navigationProvider
+    ref.listen<int>(navigationProvider, (previous, next) {
+      if (next != _pageController.page?.round()) {
+        _pageController.animateToPage(
+          next,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+        );
+      }
+    });
 
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          ref.read(navigationProvider.notifier).state = index;
+        },
+        children: _screens,
+      ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
+        selectedIndex: currentIndex,
         onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          ref.read(navigationProvider.notifier).state = index;
         },
         destinations: [
           NavigationDestination(
@@ -134,6 +166,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: const Icon(Icons.analytics_outlined),
             selectedIcon: const Icon(Icons.analytics),
             label: l10n.analytics,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.videocam_outlined),
+            selectedIcon: const Icon(Icons.videocam),
+            label: l10n.live,
           ),
           NavigationDestination(
             icon: const Icon(Icons.history_outlined),

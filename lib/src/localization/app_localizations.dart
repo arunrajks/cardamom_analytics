@@ -16,8 +16,24 @@ class AppLocalizations {
       'dashboard': 'Home',
       'analytics': 'Analytics',
       'history': 'History',
+      'live': 'Live',
       'sync_now': 'Sync Now',
       'latest_auctions': 'Latest Auctions',
+      'no_auction_active': 'No auction currently active',
+      'searching_auctions': 'Searching for live auctions...',
+      'live_auction_from': 'LIVE: {channel}',
+      'recent_session_from': 'Recent Session: {channel}',
+      'spices_board_auction': 'Spices board E-auction',
+      'sbe_auction': 'Spices board E-auction',
+      'quick_log': 'Quick Log',
+      'enter_price': 'Enter Price',
+      'log_bid': 'Log Bid',
+      'live_auction_now': 'Live Auction Now',
+      'session_1': 'Session 1',
+      'see_all': 'See All',
+      'session_2': 'Session 2',
+      'latest_tag': 'LATEST',
+
 
       'avg_price': 'Avg Price',
       'lot_quantity': 'Lot Quantity',
@@ -29,9 +45,9 @@ class AppLocalizations {
       'stability_help_title': 'Market Stability',
       'stability_help_desc': 'Shows the typical price movement you can expect. A lower value means prices are more predictable and steady.',
       'typical_price_help_title': 'Typical Price (Median)',
-      'typical_price_help_desc': 'The middle value of prices from the last 3 seasons. It is more representative of common prices than a simple average.',
+      'typical_price_help_desc': 'The middle value of prices from the last 5 seasons. It is more representative of common prices than a simple average.',
       'normal_range_help_title': 'Normal Range',
-      'normal_range_help_desc': 'The price range where the majority of auctions fell during the last 3 seasons.',
+      'normal_range_help_desc': 'The price range where the majority of auctions fell during the last 5 seasons.',
       'highest_seen_help_title': 'Highest Seen',
       'highest_seen_help_desc': 'The absolute highest price recorded in our dataset. These are rare occurrences.',
       'lowest_seen_help_title': 'Lowest Seen',
@@ -110,6 +126,8 @@ class AppLocalizations {
       'view_market_details': 'View Market Details',
       'historical_data': 'Historical Data',
       'force_reseed_local': 'Force Re-Seed (Local File)',
+      'auction_log': 'Auction Log',
+      'bold_average_disclaimer': 'Bold values are daily averages',
       'clear_all_data': 'Clear All Data',
       'no_historical_data': 'No historical data found.',
       'click_sync_hint': 'Click the sync button to get the latest data.',
@@ -150,7 +168,7 @@ class AppLocalizations {
       'market_stability': 'Market Stability',
       'this_week': 'This Week',
       'compared_to_normal_desc': 'Current prices are about {pct}% {level} than the 11-year average for {month}.',
-      'combined_comparison_desc': 'Current prices are {yoy_pct}% {yoy_level} than last year (and {hist_pct}% {hist_level} than the 11-year average for {month}).',
+      'combined_comparison_desc': 'Prices are {avg_5_season_pct}% {level} than the 5-season average; today is ₹{diff_amount} {yoy_level} than the same day last year.',
       'level_higher': 'higher',
       'level_lower': 'lower',
       'steady_week': 'Prices are steady this week.',
@@ -177,7 +195,7 @@ class AppLocalizations {
       'key_statistics': 'Key Statistics',
       'price_level_title': 'Price Level',
       'price_level_help_title': 'Price Level',
-      'price_level_help_desc': 'Shows the average price trend across the last three harvest seasons to help you identify long-term market value.',
+      'price_level_help_desc': 'Shows the average price trend across the last five harvest seasons to help you identify long-term market value.',
       'historical_label': 'Historical',
       'typical_price_label': 'Typical Price (Median)',
       'normal_range_label': 'Normal Range',
@@ -196,13 +214,13 @@ class AppLocalizations {
       'what_this_means_title': 'What this means',
       'years_of_data': '{count} Years of Data',
       'months_of_data': '{count} Months of Data',
-      'last_three_seasons': 'Last 3 Seasons',
-      'normal_range_seasonal': 'Normal Range (3 Seasons)',
-      'highest_in_range': 'Highest in range',
-      'lowest_in_range': 'Lowest in range',
-      'range_shown': 'Range shown: {range}',
-      'above_average': 'Prices in this period are above the long-term average',
-      'below_average': 'Prices in this period are below the long-term average',
+      'last_three_seasons': 'Last 5 Seasons',
+      'normal_range_seasonal': 'Normal Range (5 Seasons)',
+      'range_shown': 'Data spanning {range}',
+      'highest_in_range': 'Peak Value',
+      'lowest_in_range': 'Period Floor',
+      'above_average': 'Trading above the historical baseline',
+      'below_average': 'Trading below the historical baseline',
       'yesterday': 'Yesterday',
       'today': 'Today',
       'price_movement': 'Price Movement',
@@ -228,7 +246,35 @@ class AppLocalizations {
       'volatility_low': 'LOW',
       'volatility_moderate': 'MODERATE',
       'volatility_high': 'HIGH',
+      'market_speed': 'Market Speed',
+      'daily_range': 'Daily Range',
       'market_verdict': 'Market Verdict',
+      'research_hub': 'Research Hub',
+      'arrivals_insight': 'Market Arrivals',
+      'arrivals_desc': 'Supply Trend',
+      'export_demand': 'Export Demand',
+      'export_desc': 'Global Signal',
+      'seasonal_trends': 'Seasonal Trends',
+      'seasonal_desc': 'Historical Heatmap',
+      'stable_supply': 'Stable Supply',
+      'strong_demand': 'Strong Demand',
+      'weak_demand': 'Weak Demand',
+      'volatile': 'Volatile',
+      'peak_month': 'Peak Month',
+      'off_month': 'Off-season Month',
+      'arrivals_help_text': 'Market Arrivals comparison vs 4-week average shows if supply is tightening or surging.',
+      'demand_help_text': 'Demand Resilience index based on the ability of prices to hold steady against arrival volumes.',
+      'seasonal_help_text': 'Historical profitability heatmap for the current month across 8+ years of auction data.',
+      'weekly_range_help': 'This indicates the variation between the lowest and highest prices observed during successful auctions this week.',
+      'weekly_momentum_help': 'Momentum represents the percentage change in the average price compared to the previous 7-day period.',
+      'weekly_volatility_help': 'Weekly Volatility measures the average daily price variation. High volatility indicates higher market uncertainty and risk.',
+      'tap_for_details': 'Tap for details',
+      'close': 'Close',
+      'market_strong': 'Prices are rising',
+      'market_steady': 'Prices are steady',
+      'market_weakened': 'Prices are slightly lower',
+      'up_by_rupee': 'Up by ₹{amount}',
+      'down_by_rupee': 'Down by ₹{amount}',
       'action_label': 'Decision:',
       'good_time_to_sell': 'Good time to sell',
       'wait_for_clear_trend': 'Wait for clear trend',
@@ -237,9 +283,10 @@ class AppLocalizations {
       'risk_low': 'Low Risk',
       'risk_moderate': 'Moderate Risk',
       'risk_high': 'High Risk',
-      'verdict_explanation_sell': 'Prices are higher than usual. This is a good time to sell.',
-      'verdict_explanation_volatile': 'Prices are fluctuating sharply. Avoid rushed selling decisions.',
       'verdict_explanation_normal': 'Prices are around normal levels. Waiting may give better clarity.',
+      'average_disclaimer': 'Data reflects daily average market values.',
+      'analytics_disclaimer': 'All calculations are based on daily auction averages.',
+      'last_updated_label': 'Last updated: {time}',
       'export_success': 'Excel file exported successfully!',
       'select_language': 'Select Language',
       'email': 'Email Address',
@@ -255,7 +302,7 @@ class AppLocalizations {
       'confidence_medium': 'Confidence: Medium',
       'confidence_low': 'Confidence: Low',
       'why_label': 'Why',
-      'decision_summary': 'Market Verdict:',
+      'decision_summary': 'Market Summary',
       'sell': 'Sell',
       'hold': 'Hold',
       'wait_label': 'Wait',
@@ -265,24 +312,70 @@ class AppLocalizations {
       'typical_movement': 'Typical movement:',
       'price_moves_context': 'Price moves ± {value} from typical price',
       'full_history_label': 'Full {count} Years History',
-      'average_disclaimer': 'Note: Prices shown are daily auction averages, not the daily maximum.',
-      'volatile': 'Volatile',
       'data_range': 'Data Range',
-      'no_seasonal_data': 'No seasonal data',
+      'no_seasonal_data': 'Historical seasonal data is being analyzed...',
       'error_loading_analytics': 'Error loading analytics',
       'profile': 'Profile',
       'user_name': 'Your Name',
       'farm_name': 'Farm/Estate Name',
       'location': 'Location',
       'save_profile': 'Save Profile',
+      'next_scheduled_auctions': 'Next Scheduled Auctions',
+      'morning_session': 'Morning Session',
+      'afternoon_session': 'Afternoon Session',
+      'morning_session_time': '9:30 AM',
+      'afternoon_session_time': '2:15 PM',
+      'live_auction_title': 'LIVE: Spices Board Auction',
+      'market_pulse': 'Market Pulse',
+      'live_tracking_desc': 'Live tracking for Spices Board auctions is active. Track bids as they happen.',
+      'current_bid': 'CURRENT BID',
+      'watch_now': 'Watch Now',
+      'tap_live_tab_hint': 'Tap "Live" tab to view feed',
+      'auctioneer_label': 'Auctioneer',
+      'time_label': 'Time',
+      'location_label': 'Location',
+      'auction_no_label': 'Auction Number',
+      'date_label': 'Date',
+      'live_auction_schedule_hint': 'Live auctions typically occur Monday through Saturday, 9:00 AM - 8:00 PM.',
+      'try_discovery_again': 'Try Discovery Again',
+      'risk_msg_low': 'Market is very stable. Good time for slow decisions.',
+      'risk_msg_moderate': 'Normal market movements detected. Stay alert.',
+      'risk_msg_high': 'Prices are swinging wildly. Be very careful with large stock.',
+      'notification_denied': 'Notification permissions denied.',
+      'ok': 'OK',
+      'could_not_open_email': 'Could not open email app.',
+      'register_sync_cloud': 'Register & Sync to Cloud',
+      'range_1m': '1M',
+      'range_6m': '6M',
+      'range_1y': '1Y',
+      'range_all': '5Y',
+      'advisory_support_line': 'Based on seasonal patterns and recent price movement.',
+      'chart_explanation_sentence': 'See how the market price moves over time compared to normal levels.',
+      'more_insights': 'More insights',
     },
     'ml': {
       'app_title': 'ഏലക്കായ അനലിറ്റിക്സ്',
       'dashboard': 'ഹോം',
       'analytics': 'വിശകലനം',
       'history': 'ചരിത്രം',
+      'live': 'ലൈവ്',
       'sync_now': 'സിങ്ക് ചെയ്യുക',
       'latest_auctions': 'പുതിയ ലേലങ്ങൾ',
+      'no_auction_active': 'നിലവിൽ ലേലങ്ങൾ ഒന്നുമില്ല',
+      'searching_auctions': 'ലൈവ് ലേലങ്ങൾക്കായി തിരയുന്നു...',
+      'live_auction_from': 'ലൈവ്: {channel}',
+      'recent_session_from': 'കഴിഞ്ഞ സെഷൻ: {channel}',
+      'spices_board_auction': 'സ്പൈസസ് ബോർഡ് ഇ-ലേലം',
+      'sbe_auction': 'സ്പൈസസ് ബോർഡ് ഇ-ലേലം',
+      'quick_log': 'ക്വിക്ക് ലോഗ്',
+      'enter_price': 'വില നൽകുക',
+      'log_bid': 'രേഖപ്പെടുത്തുക',
+      'live_auction_now': 'ലേലം ഇപ്പോൾ തത്സമയം',
+      'session_1': 'സെഷൻ 1',
+      'see_all': 'എല്ലാം കാണുക',
+      'session_2': 'സെഷൻ 2',
+      'latest_tag': 'ഏറ്റവും പുതിയത്',
+
 
       'avg_price': 'ശരാശരി വില',
       'lot_quantity': 'മൊത്തം അളവ്',
@@ -297,9 +390,9 @@ class AppLocalizations {
       'stability_help_title': 'വിപണി സ്ഥിരത',
       'stability_help_desc': 'പ്രതീക്ഷിക്കാവുന്ന സാധാരണ വില വ്യതിയാനം കാണിക്കുന്നു. താഴ്ന്ന മൂല്യം എന്നാൽ വില കൂടുതൽ സ്ഥിരതയുള്ളതാണ്.',
       'typical_price_help_title': 'സാധാരണ വില (മീഡിയൻ)',
-      'typical_price_help_desc': 'കഴിഞ്ഞ 3 കാലങ്ങളിലെ വിലകളുടെ മധ്യത്തിലുള്ള വിലയാണിത്. വെറും ശരാശരിയേക്കാൾ കൃത്യമായ ചിത്രം ഇത് നൽകുന്നു.',
+      'typical_price_help_desc': 'കഴിഞ്ഞ 5 കാലങ്ങളിലെ വിലകളുടെ മധ്യത്തിലുള്ള വിലയാണിത്. വെറും ശരാശരിയേക്കാൾ കൃത്യമായ ചിത്രം ഇത് നൽകുന്നു.',
       'normal_range_help_title': 'സാധാരണ വിലയുടെ പരിധി',
-      'normal_range_help_desc': 'കഴിഞ്ഞ 3 കാലങ്ങളിൽ മിക്കപ്പോഴും വിലകൾ നിന്നിരുന്ന പരിധിയാണിത്.',
+      'normal_range_help_desc': 'കഴിഞ്ഞ 5 കാലങ്ങളിൽ മിക്കപ്പോഴും വിലകൾ നിന്നിരുന്ന പരിധിയാണിത്.',
       'highest_seen_help_title': 'ഏറ്റവും കൂടിയ വില',
       'highest_seen_help_desc': 'ചരിത്രപരമായ രേഖകളിൽ കാണപ്പെട്ട ഏറ്റവും ഉയർന്ന വിലയാണിത്. ഇത് അപൂർവ്വമായി മാത്രം സംഭവിക്കുന്നതാണ്.',
       'lowest_seen_help_title': 'ഏറ്റവും കുറഞ്ഞ വില',
@@ -360,7 +453,6 @@ class AppLocalizations {
       'disclaimer_text': 'ഈ വിവരങ്ങൾ പഴയ ലേലക്കണക്കുകളെ അടിസ്ഥാനമാക്കിയുള്ളതാണ്. ഏലക്കായ വില ആഗോള വിപണി, വിളവ്, വ്യാപാര നയങ്ങൾ എന്നിവയ്ക്ക് വിധേയമാണ്. മുൻകാലങ്ങളിലെ പ്രകടനം ഭാവി വിലയുടെ ഉറപ്പല്ല. ഇത് ഒരു വഴികാട്ടിയായി മാത്രം ഉപയോഗിക്കുക.',
       'no_data_insights': 'വിവരങ്ങൾ ലഭ്യമല്ല.',
       'low': 'കുറഞ്ഞത്',
-      'moderate': 'കുഴപ്പമില്ലാത്തത്',
       'high': 'കൂടിയത്',
       'no_data_range': 'തിരഞ്ഞെടുത്ത കാലയളവിൽ വിവരങ്ങൾ ലഭ്യമല്ല',
       'sma_volatility_label': 'ശരാശരി വിലയും വ്യതിയാന പരിധിയും',
@@ -375,6 +467,8 @@ class AppLocalizations {
       'view_market_details': 'വിശദാംശങ്ങൾ കാണുക',
       'historical_data': 'ചരിത്രപരമായ വിവരങ്ങൾ',
       'force_reseed_local': 'പഴയ വിവരങ്ങൾ വീണ്ടും ചേർക്കുക (Local File)',
+      'auction_log': 'ലേല വിവരങ്ങൾ',
+      'bold_average_disclaimer': 'ബോൾഡ് അക്ഷരത്തിലുള്ളവ ശരാശരി വിലയാണ്',
       'clear_all_data': 'എല്ലാ വിവരങ്ങളും നീക്കം ചെയ്യുക',
       'no_historical_data': 'വിവരങ്ങൾ ഒന്നും ലഭ്യമല്ല.',
       'click_sync_hint': 'പുതിയ വിവരങ്ങൾ ലഭിക്കാൻ സിങ്ക് ബട്ടൺ അമർത്തുക.',
@@ -415,7 +509,7 @@ class AppLocalizations {
       'market_stability': 'വിപണി സ്ഥിരത',
       'this_week': 'ഈ ആഴ്ച',
       'compared_to_normal_desc': 'ഇപ്പോഴത്തെ വില {month}-ലെ 11 വർഷത്തെ ശരാശരിയേക്കാൾ {pct}% {level} ആണ്.',
-      'combined_comparison_desc': 'വില കഴിഞ്ഞ വർഷത്തെ അപേക്ഷിച്ച് {yoy_pct}% {yoy_level} ആണ്; {month}-ലെ 11 വർഷത്തെ ശരാശരിയേക്കാൾ {hist_pct}% {hist_level} ആണ്.',
+      'combined_comparison_desc': 'വില കഴിഞ്ഞ 5 സീസണുകളിലെ ശരാശരിയേക്കാൾ {avg_5_season_pct}% {level} ആണ്; കഴിഞ്ഞ വർഷം ഇതേ ദിവസത്തേക്കാൾ ഇന്ന് ₹{diff_amount} {yoy_level} ആണ്.',
       'level_higher': 'കൂടുതൽ',
       'level_lower': 'കുറവ്',
       'steady_week': 'ഈ ആഴ്ച വില വളരെ സ്ഥിരതയുള്ളതാണ്.',
@@ -442,7 +536,7 @@ class AppLocalizations {
       'key_statistics': 'പ്രധാന വിവരങ്ങൾ',
       'price_level_title': 'വില നിലവാരം',
       'price_level_help_title': 'വില നിലവാരം',
-      'price_level_help_desc': 'കഴിഞ്ഞ മൂന്ന് വിളവെടുപ്പ് സീസണുകളിലെ ശരാശരി വിലയിലെ മാറ്റങ്ങൾ കാണിക്കുന്നു.',
+      'price_level_help_desc': 'കഴിഞ്ഞ അഞ്ച് വിളവെടുപ്പ് സീസണുകളിലെ ശരാശരി വിലയിലെ മാറ്റങ്ങൾ കാണിക്കുന്നു.',
       'historical_label': 'ചരിത്രപരം',
       'typical_price_label': 'സാധാരണ വില (മീഡിയൻ)',
       'normal_range_label': 'സാധാരണ പരിധി',
@@ -461,13 +555,13 @@ class AppLocalizations {
       'what_this_means_title': 'ഇതിന്റെ അർത്ഥം',
       'years_of_data': '{count} വർഷത്തെ ഡാറ്റ',
       'months_of_data': '{count} മാസത്തെ ഡാറ്റ',
-      'last_three_seasons': 'അവസാന 3 സീസണുകൾ',
-      'normal_range_seasonal': 'സാധാരണ നിലവാരം (3 വർഷം)',
-      'highest_in_range': 'ഈ കാലയളവിലെ കൂടിയ വില',
-      'lowest_in_range': 'ഈ കാലയളവിലെ കുറഞ്ഞ വില',
-      'range_shown': 'കാണിച്ചിരിക്കുന്ന കാലയളവ്: {range}',
-      'above_average': 'ഈ കാലയളവിലെ വില ശരാശരിയേക്കാൾ കൂടുതലാണ്',
-      'below_average': 'ഈ കാലയളവിലെ വില ശരാശരിയേക്കാൾ കുറവാണ്',
+      'last_three_seasons': 'അവസാന 5 സീസണുകൾ',
+      'normal_range_seasonal': 'സാധാരണ നിലവാരം (5 വർഷം)',
+      'highest_in_range': 'ഉയർന്ന നിലവാരം',
+      'lowest_in_range': 'കുറഞ്ഞ നിലവാരം',
+      'range_shown': '{range}-ലെ വിവരങ്ങൾ',
+      'above_average': 'ചരിത്രപരമായ ശരാശരിയേക്കാൾ കൂടുതലാണ്',
+      'below_average': 'ചരിത്രപരമായ ശരാശരിയേക്കാൾ താഴെയാണ്',
       'yesterday': 'ഇന്നലെ',
       'today': 'ഇന്ന്',
       'price_movement': 'വില വ്യതിയാനം',
@@ -497,9 +591,9 @@ class AppLocalizations {
       'weekly_volatility_label': 'പ്രതിവാര വ്യതിയാനം:',
       'volatility_low': 'കുറവ്',
       'volatility_moderate': 'മിതമായത്',
-      'volatility_high': 'കൂടുതൽ',
+      'volatility_high': 'കൂടിയത്',
       'initial_sync_pending': 'ഇന്നത്തെ പുതിയ വിവരങ്ങൾ ശേഖരിക്കുന്നു...',
-      'initial_sync_hint': 'നിങ്ങൾ ഇപ്പോൾ കാണുന്നത് പഴയ വിവരങ്ങളാണ്. പുതിയ വിവരങ്ങൾക്കായി അല്പസമയം കാത്തിരിക്കുകയോ റിഫ്രഷ് ബട്ടൺ അമർത്തുകയോ ചെയ്യുക.',
+      'initial_sync_hint': 'പുതിയ വിവരങ്ങൾ ശേഖരിക്കുന്നു... ദയവായി കാത്തിരിക്കുക.',
       'short_term': 'ഹ്രസ്വകാല',
       'long_term': 'ദീർഘകാല',
       'exceptional_years': 'അസാധാരണ വർഷങ്ങൾ മാത്രം',
@@ -508,7 +602,30 @@ class AppLocalizations {
       'confidence_medium': 'വിശ്വാസ്യത: ഇടത്തരം',
       'confidence_low': 'വിശ്വാസ്യത: കുറവ്',
       'why_label': 'എന്തുകൊണ്ട്',
-      'decision_summary': 'വിപണി വിധി:', // Market Verdict
+      'decision_summary': 'വിപണി സംഗ്രഹം',
+      'market_verdict': 'വിപണി വിധി',
+      'research_hub': 'റിസർച്ച് ഹബ്',
+      'arrivals_insight': 'മാർക്കറ്റ് വരവ്',
+      'arrivals_desc': 'സപ്ലൈ ട്രെൻഡ്',
+      'export_demand': 'കയറ്റുമതി ഡിമാൻഡ്',
+      'export_desc': 'ഗ്ലോബൽ സിഗ്നൽ',
+      'seasonal_trends': 'സീസണൽ ട്രെൻഡുകൾ',
+      'seasonal_desc': 'ഹിസ്റ്റോറിക്കൽ ഹീറ്റ്മാപ്പ്',
+      'stable_supply': 'സ്ഥിരമായ സപ്ലൈ',
+      'strong_demand': 'ശക്തമായ ഡിമാൻഡ്',
+      'weak_demand': 'കുറഞ്ഞ ഡിമാൻഡ്',
+      'volatile': 'അസ്ഥിരമാണ്',
+      'moderate': 'മിതമാണ്',
+      'peak_month': 'പീക്ക് മാസം',
+      'off_month': 'ഓഫ്-സീസൺ മാസം',
+      'arrivals_help_text': 'വരവും 4 ആഴ്ചത്തെ ശരാശരിയും തമ്മിലുള്ള താരതമ്യം സപ്ലൈ കൂടുന്നുണ്ടോ എന്ന് കാണിക്കുന്നു.',
+      'demand_help_text': 'വരവിനെതിരെ വിലയ്ക്ക് എത്രത്തോളം പിടിച്ചുനിൽക്കാൻ കഴിയുന്നു എന്ന് കാണിക്കുന്നു.',
+      'seasonal_help_text': 'കഴിഞ്ഞ 8+ വർഷങ്ങളിലെ ലാഭക്ഷമതയുടെ അടിസ്ഥാനത്തിലുള്ള വിലയിരുത്തൽ.',
+      'weekly_range_help': 'ഈ ആഴ്ചയിലെ ഏറ്റവും കുറഞ്ഞ വിലയും കൂടിയ വിലയും തമ്മിലുള്ള വ്യത്യാസം ഇത് സൂചിപ്പിക്കുന്നു.',
+      'weekly_momentum_help': 'കഴിഞ്ഞ 7 ദിവസങ്ങളിലെ ശരാശരി വിലയുമായുള്ള താരതമ്യം.',
+      'weekly_volatility_help': 'വില മാറ്റങ്ങളിലെ അസ്ഥിരതയാണിത്. കൂടുതൽ ഉണ്ടെങ്കിൽ റിസ്ക് കൂടുതലാണെന്ന് അർത്ഥം.',
+      'tap_for_details': 'കൂടുതൽ വിവരങ്ങൾക്ക് അമർത്തുക',
+      'close': 'അടയ്ക്കുക',
       'sell': 'വില്ക്കുക',
       'hold': 'കാത്തിരിക്കുക',
       'wait_label': 'കാത്തിരിക്കുക',
@@ -518,11 +635,16 @@ class AppLocalizations {
       'typical_movement': 'സാധാരണ വ്യതിയാനം:',
       'price_moves_context': 'സാധാരണ വിലയിൽ നിന്ന് ± {value} മാറ്റം വരാം',
       'full_history_label': '{count} വർഷത്തെ ചരിത്രം',
-      'average_disclaimer': 'ശ്രദ്ധിക്കുക: ഇവിടെ നൽകിയിരിക്കുന്ന വിലകൾ ലേല ദിവസത്തെ ശരാശരി വിലകളാണ്, പരമാവധി വിലയല്ല.',
-      'market_verdict': 'വിപണി വിധി',
+      'market_speed': 'മാർക്കറ്റ് സ്പീഡ്',
+      'daily_range': 'ഡെയ്‌ലി റേഞ്ച്',
+      'market_strong': 'വില കൂടുന്നു',
+      'market_steady': 'വില മാറ്റമില്ലാതെ തുടരുന്നു',
+      'market_weakened': 'വില നേരിയ തോതിൽ കുറയുന്നു',
+      'up_by_rupee': '₹{amount} കൂടി',
+      'down_by_rupee': '₹{amount} കുറഞ്ഞു',
       'action_label': 'തീരുമാനം:',
       'good_time_to_sell': 'വിൽക്കാൻ നല്ല സമയം',
-      'wait_for_clear_trend': 'വ്യക്തമായ പ്രവണതയ്ക്കായി കാത്തിരിക്കുക',
+      'wait_for_clear_trend': 'കാത്തിരിക്കുക',
       'be_cautious': 'ജാഗ്രത പാലിക്കുക',
       'market_risk_details_title': 'വിശദമായ വിപണി സാധ്യത (വിപുലമായത്)',
       'risk_low': 'കുറഞ്ഞ സാധ്യത',
@@ -531,23 +653,73 @@ class AppLocalizations {
       'verdict_explanation_sell': 'വില സാധാരണയേക്കാൾ കൂടുതലാണ്. വിൽക്കാൻ അനുയോജ്യമായ സമയമാണിത്.',
       'verdict_explanation_volatile': 'വിലയിൽ വലിയ മാറ്റങ്ങൾ കാണുന്നു. ധൃതിയിൽ തീരുമാനങ്ങൾ എടുക്കാതിരിക്കുക.',
       'verdict_explanation_normal': 'വില ഇപ്പോൾ സാധാരണ നിലയിലാണ്. കാത്തിരിക്കുന്നത് വിപണിയിൽ കൂടുതൽ വ്യക്തത നൽകും.',
-      'volatile': 'മാറ്റങ്ങൾ കൂടുതൽ', // Volatile
       'data_range': 'കാലയളവ്',
-      'no_seasonal_data': 'സീസണൽ വിവരങ്ങൾ ലഭ്യമല്ല',
+      'no_seasonal_data': 'സീസണൽ വിവരങ്ങൾ വിശകലനം ചെയ്യുന്നു...',
       'error_loading_analytics': 'അനലിറ്റിക്സ് ലഭ്യമാക്കുന്നതിൽ തകരാർ',
       'profile': 'പ്രൊഫൈൽ',
       'user_name': 'നിങ്ങളുടെ പേര്',
       'farm_name': 'തോട്ടത്തിന്റെ പേര്',
       'location': 'സ്ഥലം',
       'save_profile': 'വിവരങ്ങൾ സംരക്ഷിക്കുക',
+      'next_scheduled_auctions': 'അടുത്ത ലേലങ്ങൾ',
+      'morning_session': 'രാവിലത്തെ സെഷൻ',
+      'afternoon_session': 'ഉച്ചയ്ക്ക് ശേഷമുള്ള സെഷൻ',
+      'morning_session_time': '9:30 AM',
+      'afternoon_session_time': '2:15 PM',
+      'live_auction_title': 'LIVE: സ്പൈസസ് ബോർഡ് ലേലം',
+      'market_pulse': 'മാർക്കറ്റ് പൾസ്',
+      'live_tracking_desc': 'സ്പൈസസ് ബോർഡ് ലേലങ്ങളുടെ തത്സമയ ട്രാക്കിംഗ് ഇപ്പോൾ ലഭ്യമാണ്.',
+      'current_bid': 'നിലവിലെ വില',
+      'watch_now': 'ഇപ്പോൾ കാണുക',
+      'tap_live_tab_hint': 'ലൈവ് കാണുന്നതിനായി "Live" ടാബ് അമർത്തുക',
+      'auctioneer_label': 'ലേലക്കാരൻ',
+      'time_label': 'സമയം',
+      'location_label': 'സ്ഥലം',
+      'auction_no_label': 'ലേല നമ്പർ',
+      'date_label': 'തീയതി',
+      'live_auction_schedule_hint': 'തിങ്കൾ മുതൽ ശനി വരെ രാവിലെ 9:30 മുതൽ രാത്രി 8:00 വരെയാണ് സാധാരണയായി ലേലങ്ങൾ നടക്കുന്നത്.',
+      'try_discovery_again': 'വീണ്ടും ശ്രമിക്കുക',
+      'risk_msg_low': 'വിപണി വളരെ സ്ഥിരതയുള്ളതാണ്. തീരുമാനങ്ങൾ എടുക്കാൻ ധൃതി വേണ്ട.',
+      'risk_msg_moderate': 'സാധാരണ നിലയിലുള്ള വില മാറ്റങ്ങൾ കാണപ്പെടുന്നു. ശ്രദ്ധിക്കുക.',
+      'risk_msg_high': 'വിലയിൽ വലിയ മാറ്റങ്ങൾ സംഭവിക്കുന്നു. സ്റ്റോക്ക് വിൽക്കുമ്പോൾ ശ്രദ്ധിക്കുക.',
+      'notification_denied': 'നോട്ടിഫിക്കേഷൻ പെർമിഷൻ നിരസിക്കപ്പെട്ടു.',
+      'ok': 'ശരി',
+      'could_not_open_email': 'ഇമെയിൽ അപ്പ് തുറക്കാൻ കഴിഞ്ഞില്ല.',
+      'register_sync_cloud': 'രജിസ്റ്റർ ചെയ്ത് ക്ലൗഡിലേക്ക് സിങ്ക് ചെയ്യുക',
+      'range_1m': '1 മാ',
+      'range_6m': '6 മാ',
+      'range_1y': '1 വർഷം',
+      'range_all': '5 വ',
+      'advisory_support_line': 'സീസണൽ രീതികളും സമീപകാല വില മാറ്റങ്ങളും അടിസ്ഥാനമാക്കി.',
+      'chart_explanation_sentence': 'സാധാരണ നിലയുമായി താരതമ്യം ചെയ്യുമ്പോൾ വിപണി വില മാറുന്നത് എങ്ങനെയെന്ന് കാണുക.',
+      'more_insights': 'കൂടുതൽ വിവരങ്ങൾ',
+      'average_disclaimer': 'ഡാറ്റ ദിവസേനയുള്ള ശരാശരിയാണ്.',
+      'analytics_disclaimer': 'ലേല ശരാശരി വിലയെ അടിസ്ഥാനമാക്കിയുള്ള കണക്കുകൾ.',
+      'last_updated_label': 'അവസാനം പുതുക്കിയത്: {time}',
     },
     'ta': {
       'app_title': 'ஏலக்காய் பகுப்பாய்வு',
       'dashboard': 'முகப்பு',
       'analytics': 'பகுப்பாய்வு',
       'history': 'வரலாறு',
+      'live': 'நேரலை',
       'sync_now': 'இணைத்தல்',
       'latest_auctions': 'சமீபத்திய ஏலங்கள்',
+      'no_auction_active': 'தற்போது ஏலங்கள் எதுவும் நடைபெறவில்லை',
+      'searching_auctions': 'நேரடி ஏலங்களைத் தேடுகிறது...',
+      'live_auction_from': 'நேரலை: {channel}',
+      'recent_session_from': 'சமீபத்திய அமர்வு: {channel}',
+      'spices_board_auction': 'ஸ்பைசஸ் போர்டு இ-ஏலம்',
+      'sbe_auction': 'ஸ்பைசஸ் போர்டு இ-ஏலம்',
+      'quick_log': 'விரைவுப் பதிவு',
+      'enter_price': 'விலையை உள்ளிடவும்',
+      'log_bid': 'பதிவு செய்',
+      'live_auction_now': 'ஏலம் இப்போது நேரலையில்',
+      'session_1': 'அமர்வு 1',
+      'see_all': 'அனைத்தையும் பார்',
+      'session_2': 'அமர்வு 2',
+      'latest_tag': 'சமீபத்தியது',
+
 
       'avg_price': 'சராசரி விலை',
       'lot_quantity': 'மொத்த அளவு',
@@ -559,9 +731,9 @@ class AppLocalizations {
       'stability_help_title': 'சந்தை நிலைத்தன்மை',
       'stability_help_desc': 'நீங்கள் எதிர்பார்க்கக்கூடிய வழக்கமான விலை மாற்றத்தைக் காட்டுகிறது. குறைந்த மதிப்பு என்றால் விலைகள் சீராக இருக்கும்.',
       'typical_price_help_title': 'சாதாரண விலை (மீடியன்)',
-      'typical_price_help_desc': 'கடந்த 3 பருவங்களின் விலைகளில் நடுப்பகுதி விலையாகும். சராசரி விலையை விட இது துல்லியமானது.',
+      'typical_price_help_desc': 'கடந்த 5 பருவங்களின் விலைகளில் நடுப்பகுதி விலையாகும். சராசரி விலையை விட இது துல்லியமானது.',
       'normal_range_help_title': 'சாதாரண விலை வரம்பு',
-      'normal_range_help_desc': 'கடந்த 3 பருவங்களில் பெரும்பாலான ஏலங்கள் நடத்தப்பட்ட விலை வரம்பாகும்.',
+      'normal_range_help_desc': 'கடந்த 5 பருவங்களில் பெரும்பாலான ஏலங்கள் நடத்தப்பட்ட விலை வரம்பாகும்.',
       'highest_seen_help_title': 'அதிகபட்ச விலை',
       'highest_seen_help_desc': 'பதிவு செய்யப்பட்ட ஏலங்களில் இதெ ஒரு மிக உயர்ந்த விலையாகும். இது அரிதாகவே நிகழும்.',
       'lowest_seen_help_title': 'குறைந்தபட்ச விலை',
@@ -625,7 +797,6 @@ class AppLocalizations {
       'disclaimer_text': 'இந்த நுண்ணறிவு வரலாற்று ஏல பதிவுகளை அடிப்படையாகக் கொண்டது. ஏலக்காய் விலைகள் உலகளாவிய சந்தை நிலைமைகள், பயிர் விளைச்சல் மற்றும் வர்த்தகக் கொள்கைகளுக்கு உட்பட்டவை. கடந்த கால செயல்திறன் எதிர்கால விலைகளுக்கான உத்தரவாதம் அல்ல. இதை வழிகாட்டுதலுக்கு மட்டுமே பயன்படுத்தவும்.',
       'no_data_insights': 'போதிய தகவல்கள் இல்லை.',
       'low': 'குறைவு',
-      'moderate': 'மிதமானது',
       'high': 'அதிகம்',
       'no_data_range': 'தேர்ந்தெடுக்கப்பட்ட காலத்திற்குத் தரவு இல்லை',
       'sma_volatility_label': 'நகரும் சராசரி & விலை மாற்ற எல்லை',
@@ -640,6 +811,8 @@ class AppLocalizations {
       'view_market_details': 'சந்தை விவரங்களைக் காண்க',
       'historical_data': 'வரலாற்று தரவு',
       'force_reseed_local': 'தரவை மீண்டும் ஏற்றவும் (Local File)',
+      'auction_log': 'ஏலப் பதிவு',
+      'bold_average_disclaimer': 'தடிமனான எண்கள் தினசரி சராசரி விலையைக் குறிக்கின்றன',
       'clear_all_data': 'அனைத்து தரவையும் நீக்குக',
       'no_historical_data': 'வரலாற்று தரவு எதுவும் இல்லை.',
       'click_sync_hint': 'சமீபத்திய தரவைப் பெற இணைத்தல் பொத்தானைக் கிளிக் செய்யவும்.',
@@ -680,7 +853,7 @@ class AppLocalizations {
       'market_stability': 'சந்தை நிலைத்தன்மை',
       'this_week': 'இந்த வாரம்',
       'compared_to_normal_desc': 'தற்போதைய விலைகள் {month} மாதத்திற்கான 11 ஆண்டுகால சராசரியை விட {pct}% {level} உள்ளன.',
-      'combined_comparison_desc': 'விலைகள் கடந்த ஆண்டை விட {yoy_pct}% {yoy_level} உள்ளன, மேலும் {month} மாதத்திற்கான 11 ஆண்டுகால சராசரியை விட {hist_pct}% {hist_level} உள்ளன.',
+      'combined_comparison_desc': 'விலைகள் கடந்த 5 சீசனின் சராசரியை விட {avg_5_season_pct}% {level} உள்ளன; இன்று கடந்த ஆண்டு இதே நாளை விட ₹{diff_amount} {yoy_level} உள்ளன.',
       'level_higher': 'அதிகம்',
       'level_lower': 'குறைவு',
       'steady_week': 'இந்த வாரம் விலைகள் சீராக உள்ளன.',
@@ -707,7 +880,7 @@ class AppLocalizations {
       'key_statistics': 'முக்கிய புள்ளிவிவரங்கள்',
       'price_level_title': 'விலை நிலை',
       'price_level_help_title': 'விலை நிலை',
-      'price_level_help_desc': 'கடந்த மூன்று அறுவடை காலங்களில் சராசரி விலை மாற்றங்களைக் காட்டுகிறது.',
+      'price_level_help_desc': 'கடந்த ஐந்து அறுவடை காலங்களில் சராசரி விலை மாற்றங்களைக் காட்டுகிறது.',
       'historical_label': 'வரலாற்று',
       'typical_price_label': 'சாதாரண விலை (மீடியன்)',
       'normal_range_label': 'சாதாரண வரம்பு',
@@ -726,13 +899,13 @@ class AppLocalizations {
       'what_this_means_title': 'இதன் பொருள்',
       'years_of_data': '{count} ஆண்டு தரவு',
       'months_of_data': '{count} மாத தரவு',
-      'last_three_seasons': 'கடந்த 3 பருவங்கள்',
-      'normal_range_seasonal': 'சாதாரண வரம்பு (3 ஆண்டுகள்)',
-      'highest_in_range': 'இந்தக் காலப்பகுதியில் அதிகபட்சம்',
-      'lowest_in_range': 'இந்தக் காலப்பகுதியில் குறைந்தபட்சம்',
-      'range_shown': 'காட்டப்பட்டுள்ள வரம்பு: {range}',
-      'above_average': 'இந்த காலப்பகுதியில் விலைகள் நீண்ட கால சராசரியை விட அதிகமாக உள்ளன',
-      'below_average': 'இந்த காலப்பகுதியில் விலைகள் நீண்ட கால சராசரியை விட குறைவாக உள்ளன',
+      'last_three_seasons': 'கடந்த 5 பருவங்கள்',
+      'normal_range_seasonal': 'சாதாரண வரம்பு (5 ஆண்டுகள்)',
+      'highest_in_range': 'உச்ச மதிப்பு',
+      'lowest_in_range': 'குறைந்தபட்ச அளவு',
+      'range_shown': '{range} தரவு',
+      'above_average': 'வரலாற்று சராசரிக்கு மேல் உள்ளது',
+      'below_average': 'வரலாற்று சராசரிக்கு கீழே உள்ளது',
       'yesterday': 'நேற்று',
       'today': 'இன்று',
       'price_movement': 'விலை மாற்றம்',
@@ -761,10 +934,39 @@ class AppLocalizations {
       'volatility_low': 'குறைவு',
       'volatility_moderate': 'மிதமானது',
       'volatility_high': 'HIGH',
+      'market_speed': 'சந்தை வேகம்',
+      'daily_range': 'தினசரி மாற்றம்',
       'market_verdict': 'சந்தை தீர்ப்பு',
+      'research_hub': 'ஆராய்ச்சி மையம்',
+      'arrivals_insight': 'சந்தை வரத்து',
+      'arrivals_desc': 'வழங்கல் போக்கு',
+      'export_demand': 'ஏற்றுமதி தேவை',
+      'export_desc': 'உலகளாவிய சமிக்ஞை',
+      'seasonal_trends': 'பருவகால போக்குகள்',
+      'seasonal_desc': 'வரலாற்று வரைபடம்',
+      'stable_supply': 'நிலையான வரத்து',
+      'strong_demand': 'அதிக தேவை',
+      'weak_demand': 'குறைந்த தேவை',
+      'volatile': 'நிலையற்றது',
+      'moderate': 'மிதமான',
+      'peak_month': 'உச்ச மாதம்',
+      'off_month': 'ஆஃப்-சீசன் மாதம்',
+      'arrivals_help_text': 'சந்தை வரத்து 4 வார சராசரியுடன் ஒப்பிடப்பட்டு வழங்கல் நிலவரத்தை காட்டுகிறது.',
+      'demand_help_text': 'வரத்து அளவிற்கேற்ப விலையின் நிலைப்புத்தன்மையை அடிப்படையாகக் கொண்ட தேவை குறியீடு.',
+      'seasonal_help_text': 'கடந்த 8+ ஆண்டுகளின் ஏலத் தரவுகளின் அடிப்படையிலான லாபத்தன்மை ஆய்வு.',
+      'weekly_range_help': 'இந்த வாரத்தில் பதிவான குறைந்தபட்ச மற்றும் அதிகபட்ச விலைகளுக்கு இடையிலான மாற்றத்தை இது குறிக்கிறது.',
+      'weekly_momentum_help': 'கடந்த 7 நாட்களில் சராசரி விலையில் ஏற்பட்ட சதவீத மாற்றத்தை இது குறிக்கிறது.',
+      'weekly_volatility_help': 'சராசரி தினசரி விலை மாற்றத்தை இது குறிக்கிறது. அதிக மாற்றம் இருந்தால் சந்தை நிச்சயமற்றதாக இருக்கும்.',
+      'tap_for_details': 'விவரங்களுக்கு தட்டவும்',
+      'close': 'மூடு',
+      'market_strong': 'விலை உயர்கிறது',
+      'market_steady': 'விலை சீராக உள்ளது',
+      'market_weakened': 'விலை சற்று குறைந்துள்ளது',
+      'up_by_rupee': '₹{amount} உயர்வு',
+      'down_by_rupee': '₹{amount} குறைவு',
       'action_label': 'முடிவு:',
       'good_time_to_sell': 'விற்க நல்ல நேரம்',
-      'wait_for_clear_trend': 'தெளிவான போக்கிற்காக காத்திருங்கள்',
+      'wait_for_clear_trend': 'காத்திருங்கள்',
       'be_cautious': 'எச்சரிக்கையாக இருங்கள்',
       'market_risk_details_title': 'விரிவான சந்தை அபாயம்',
       'risk_low': 'குறைந்த அபாயம்',
@@ -776,7 +978,7 @@ class AppLocalizations {
       'phone_number': 'தொலைபேசி எண்',
       'profile_privacy_note': 'உங்கள் விவரங்கள் இந்த சாதனத்தில் மட்டுமே சேமிக்கப்படும்.',
       'initial_sync_pending': 'இன்றைய சமீபத்திய பதிவுகளை சேகரிக்கிறது...',
-      'initial_sync_hint': 'நீங்கள் தற்போது வரலாற்றுத் தரவைப் பார்க்கிறீர்கள். இன்றைய நேரடி விலைகளைப் பெற காத்திருக்கவும் அல்லது புதுப்பிக்கவும்.',
+      'initial_sync_hint': 'புதிய தகவல்கள் சேகரிக்கப்படுகின்றன... தயவுசெய்து காத்திருக்கவும்.',
       'short_term': 'குறுகிய கால',
       'long_term': 'நீண்ட கால',
       'exceptional_years': 'விதிவிலக்கான ஆண்டுகள் மட்டுமே',
@@ -785,7 +987,7 @@ class AppLocalizations {
       'confidence_medium': 'நம்பிக்கை: மிதமான',
       'confidence_low': 'நம்பிக்கை: குறைவு',
       'why_label': 'ஏன்',
-      'decision_summary': 'சந்தை தீர்ப்பு:', // Market Verdict
+      'decision_summary': 'சந்தை சுருக்கம்',
       'sell': 'விற்க',
       'hold': 'காத்திருக்க',
       'wait_label': 'காத்திருக்க',
@@ -795,16 +997,49 @@ class AppLocalizations {
       'typical_movement': 'சாதாரண விலை மாற்றம்:',
       'price_moves_context': 'சாதாரண விலையிலிருந்து ± {value} மாற்றம் வரும்',
       'full_history_label': '{count} வருட வரலாறு',
-      'average_disclaimer': 'குறிப்பு: இங்கே காட்டப்பட்டுள்ள விலைகள் ஏல நாள் சராசரி விலைகளே தவிர, அதிகபட்ச விலை அல்ல.',
-      'volatile': 'நிலையற்றது',
+      'average_disclaimer': 'தரவுகள் தினசரி சந்தை மதிப்பைப் பிரதிபலிக்கின்றன.',
+      'analytics_disclaimer': 'அனைத்து கணக்கீடுகளும் தினசரி ஏல சராசரிகளின் அடிப்படையிலானவை.',
       'data_range': 'கால அளவு',
-      'no_seasonal_data': 'பருவகால தரவு இல்லை',
+      'no_seasonal_data': 'பருவகால தரவு பகுப்பாய்வு செய்யப்படுகிறது...',
       'error_loading_analytics': 'பகுப்பாய்வை ஏற்றுவதில் பிழை',
       'profile': 'சுயவிவரம்',
       'user_name': 'உங்கள் பெயர்',
       'farm_name': 'தோட்டத்தின் பெயர்',
       'location': 'இடம்',
       'save_profile': 'விவரங்களைச் சேமிக்கவும்',
+      'next_scheduled_auctions': 'அடுத்த திட்டமிடப்பட்ட ஏலங்கள்',
+      'morning_session': 'காலை அமர்வு',
+      'afternoon_session': 'மதிய அமர்வு',
+      'morning_session_time': 'காலை 9:30 மணி',
+      'afternoon_session_time': 'மதியம் 2:15 மணி',
+      'live_auction_title': 'நேரலை: ஸ்பைசஸ் போர்டு ஏலம்',
+      'market_pulse': 'சந்தை துடிப்பு',
+      'live_tracking_desc': 'ஸ்பைசஸ் போர்டு ஏலங்களின் நேரடி கண்காணிப்பு செயலில் உள்ளது.',
+      'current_bid': 'தற்போதைய ஏலம்',
+      'watch_now': 'இப்போது பார்க்கவும்',
+      'tap_live_tab_hint': 'நேரலையைக் காண "Live" டேப்பை அழுத்தவும்',
+      'auctioneer_label': 'ஏலதாரர்',
+      'time_label': 'நேரம்',
+      'location_label': 'இடம்',
+      'auction_no_label': 'ஏல எண்',
+      'date_label': 'தேதி',
+      'live_auction_schedule_hint': 'நேரலை ஏலங்கள் பொதுவாக திங்கள் முதல் சனி வரை காலை 9:30 முதல் இரவு 8:00 மணி வரை நடைபெறும்.',
+      'try_discovery_again': 'மீண்டும் முயற்சி செய்',
+      'risk_msg_low': 'சந்தை மிகவும் சீராக உள்ளது. நிதானமாக முடிவெடுக்கலாம்.',
+      'risk_msg_moderate': 'சாதாரண சந்தை மாற்றங்கள் காணப்படுகின்றன. எச்சரிக்கையாக இருங்கள்.',
+      'risk_msg_high': 'விலையில் கடும் ஏற்ற இறக்கங்கள் உள்ளன. விற்பனை செய்யும் போது கவனமாக இருக்கவும்.',
+      'notification_denied': 'அறிவிப்பு அனுமதி மறுக்கப்பட்டது.',
+      'ok': 'சரி',
+      'could_not_open_email': 'மின்னஞ்சல் செயலியைத் திறக்க முடியவில்லை.',
+      'register_sync_cloud': 'பதிவு செய்து கிளவுடிற்கு ஒத்திசைக்கவும்',
+      'range_1m': '1 மாத',
+      'range_6m': '6 மாத',
+      'range_1y': '1 வருட',
+      'range_all': '5 வ',
+      'advisory_support_line': 'பருவகால முறைகள் மற்றும் சமீபத்திய விலை மாற்றங்களின் அடிப்படையில்.',
+      'chart_explanation_sentence': 'சாதாரண நிலைகளுடன் ஒப்பிடும்போது சந்தை விலை எவ்வாறு மாறுகிறது என்பதைப் பாருங்கள்.',
+      'more_insights': 'கூடுதல் நுண்ணறிவுகள்',
+      'last_updated_label': 'கடைசியாக புதுப்பிக்கப்பட்டது: {time}',
     },
   };
 
@@ -818,8 +1053,15 @@ class AppLocalizations {
   String get dashboard => translate('dashboard');
   String get analytics => translate('analytics');
   String get history => translate('history');
+  String get live => translate('live');
   String get syncNow => translate('sync_now');
   String get latestAuctions => translate('latest_auctions');
+  String get noAuctionActive => translate('no_auction_active');
+  String get searchingAuctions => translate('searching_auctions');
+  String get quickLog => translate('quick_log');
+  String get enterPrice => translate('enter_price');
+  String get logBid => translate('log_bid');
+
   String get avgPrice => translate('avg_price');
   String get lotQuantity => translate('lot_quantity');
   String get kg => translate('kg');
@@ -937,6 +1179,21 @@ class AppLocalizations {
   String get distanceLabel => translate('distance_label');
   String get keyInsightTitle => translate('key_insight_title');
   String get whatThisMeansTitle => translate('what_this_means_title');
+  String get dateLabel => translate('date_label');
+  String get liveAuctionScheduleHint => translate('live_auction_schedule_hint');
+  String get tryDiscoveryAgain => translate('try_discovery_again');
+  String get seeAll => translate('see_all');
+  String get notificationDenied => translate('notification_denied');
+  String get ok => translate('ok');
+  String get couldNotOpenEmail => translate('could_not_open_email');
+  String get registerSyncCloud => translate('register_sync_cloud');
+  String get range1m => translate('range_1m');
+  String get range6m => translate('range_6m');
+  String get range1y => translate('range_1y');
+  String get rangeAll => translate('range_all');
+  String get advisorySupportLine => translate('advisory_support_line');
+  String get chartExplanationSentence => translate('chart_explanation_sentence');
+  String get moreInsights => translate('more_insights');
 
   String syncComplete(int count) => translate('sync_complete').replaceAll('{count}', count.toString());
   String reseedComplete(int count) => translate('reseed_complete').replaceAll('{count}', count.toString());
@@ -979,6 +1236,7 @@ class AppLocalizations {
   String get waitLabel => translate('wait_label');
   String get yes => translate('yes');
   String get no => translate('no');
+  String get risk => translate('risk');
   String get riskLabel => translate('risk');
   String get typicalMovement => translate('typical_movement');
   String priceMovesContext(String value) => translate('price_moves_context').replaceAll('{value}', value);
@@ -1012,7 +1270,16 @@ class AppLocalizations {
   String get volatilityLow => translate('volatility_low');
   String get volatilityModerate => translate('volatility_moderate');
   String get volatilityHigh => translate('volatility_high');
+  String get marketSpeed => translate('market_speed');
+  String get dailyRange => translate('daily_range');
   String get marketVerdict => translate('market_verdict');
+  String get marketStrong => translate('market_strong');
+  String get marketSteady => translate('market_steady');
+  String get marketWeakened => translate('market_weakened');
+  
+  String upByRupee(String amount) => translate('up_by_rupee').replaceAll('{amount}', amount);
+  String downByRupee(String amount) => translate('down_by_rupee').replaceAll('{amount}', amount);
+
   String get actionLabel => translate('action_label');
   String get actualPrice => translate('actual_price');
   String get goodTimeToSell => translate('good_time_to_sell');
@@ -1024,6 +1291,33 @@ class AppLocalizations {
   String get riskHigh => translate('risk_high');
   String seasonalHighTip(String month) => translate('seasonal_high_tip').replaceAll('{month}', month);
   String seasonalLowTip(String month) => translate('seasonal_low_tip').replaceAll('{month}', month);
+
+  String get nextScheduledAuctions => translate('next_scheduled_auctions');
+  String get morningSession => translate('morning_session');
+  String get afternoonSession => translate('afternoon_session');
+  String get morningSessionTime => translate('morning_session_time');
+  String get afternoonSessionTime => translate('afternoon_session_time');
+  String get liveAuctionTitle => translate('live_auction_title');
+  String get marketPulse => translate('market_pulse');
+  String get liveTrackingDesc => translate('live_tracking_desc');
+  String get currentBid => translate('current_bid');
+  String get watchNow => translate('watch_now');
+  String get tapLiveTabHint => translate('tap_live_tab_hint');
+  
+  String get sbeAuction => translate('sbe_auction');
+  String get spicesBoardAuction => translate('spices_board_auction');
+  
+  String liveAuctionFrom(String channel) {
+    return translate('live_auction_from').replaceAll('{channel}', channel);
+  }
+
+  String recentSessionFrom(String channel) {
+    return translate('recent_session_from').replaceAll('{channel}', channel);
+  }
+
+  String get averageDisclaimer => translate('average_disclaimer');
+  String get analyticsDisclaimer => translate('analytics_disclaimer');
+  String lastUpdated(String time) => translate('last_updated_label').replaceAll('{time}', time);
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {

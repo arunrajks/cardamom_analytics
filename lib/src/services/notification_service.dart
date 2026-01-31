@@ -121,7 +121,7 @@ class NotificationService {
 
     await _notifications.show(
       notificationId % 100000, // Stay within safe ID range
-      'New Price: ₹${avgPrice.toStringAsFixed(0)}',
+      '[$dateStr] New Price: ₹${avgPrice.toStringAsFixed(0)}',
       'Auction at $auctioneer: ${NumberFormat("#,##0").format(quantity)} kg sold',
       details,
       payload: 'auction_${date.toIso8601String()}',

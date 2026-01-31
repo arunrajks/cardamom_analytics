@@ -16,11 +16,11 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _feedbackController = TextEditingController();
-  bool _isLoading = false;
 
   final String developerEmail = "apps.spicekraft@gmail.com";
 
   Future<void> _sendViaEmail() async {
+    final l10n = AppLocalizations.of(context);
     if (_formKey.currentState!.validate()) {
       final String name = _nameController.text.isEmpty ? "Anonymous" : _nameController.text;
       final String email = _emailController.text.isEmpty ? "Not provided" : _emailController.text;
@@ -48,7 +48,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           _onSuccess();
         }
       } catch (e) {
-        _showError("Could not open email app. Please ensure an email account is configured.");
+        _showError(l10n.couldNotOpenEmail);
       }
     }
   }
@@ -98,9 +98,9 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: ThemeConstants.primaryGreen.withOpacity(0.05),
+                  color: ThemeConstants.primaryGreen.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: ThemeConstants.primaryGreen.withOpacity(0.1)),
+                  border: Border.all(color: ThemeConstants.primaryGreen.withValues(alpha: 0.1)),
                 ),
                 child: Row(
                   children: [
@@ -200,7 +200,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.withOpacity(0.1)),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.1)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),

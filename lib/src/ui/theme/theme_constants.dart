@@ -19,6 +19,17 @@ class ThemeConstants {
   static const Color smaGold = Color(0xFFF9A825);        // Moving Averages
   static const Color neutralGrey = Color(0xFF757575);    // Soft details, info icons
 
+  // Premium Glass Shadows
+  static List<BoxShadow> premiumShadow = [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: 0.04),
+      blurRadius: 24,
+      offset: const Offset(0, 8),
+    ),
+  ];
+
+  static double cornerRadius = 32.0;
+
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.light(
@@ -42,7 +53,7 @@ class ThemeConstants {
       color: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(cornerRadius),
       ),
     ),
   );
