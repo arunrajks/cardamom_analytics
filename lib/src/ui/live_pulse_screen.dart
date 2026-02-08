@@ -1,16 +1,17 @@
-import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import 'package:cardamom_analytics/src/localization/app_localizations.dart';
 import 'package:cardamom_analytics/src/services/youtube_service.dart';
+import 'package:cardamom_analytics/src/providers/navigation_provider.dart';
 
-class LivePulseScreen extends StatefulWidget {
+class LivePulseScreen extends ConsumerStatefulWidget {
   const LivePulseScreen({super.key});
 
   @override
-  State<LivePulseScreen> createState() => _LivePulseScreenState();
+  ConsumerState<LivePulseScreen> createState() => _LivePulseScreenState();
 }
 
-class _LivePulseScreenState extends State<LivePulseScreen> {
+class _LivePulseScreenState extends ConsumerState<LivePulseScreen> with WidgetsBindingObserver {
   YoutubePlayerController? _controller;
   final YouTubeService _youtubeService = YouTubeService();
   
@@ -21,7 +22,15 @@ class _LivePulseScreenState extends State<LivePulseScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _discoverAuction();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+      _controller?.pause();
+    }
   }
 
   Future<void> _discoverAuction() async {
@@ -73,6 +82,7 @@ class _LivePulseScreenState extends State<LivePulseScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }
@@ -81,6 +91,13 @@ class _LivePulseScreenState extends State<LivePulseScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+
+    // Auto-pause if we switch away from the Live tab (index 2)
+    ref.listen<int>(navigationProvider, (previous, next) {
+      if (next != 2) {
+        _controller?.pause();
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
