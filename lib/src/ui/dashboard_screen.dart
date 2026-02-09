@@ -604,7 +604,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> with SingleTi
                   icon: const Icon(Icons.refresh, color: Colors.orange, size: 20),
                   onPressed: () {
                     ref.read(syncLoadingProvider.notifier).state = true;
-                    ref.refresh(historicalFullPricesProvider);
+                      final _ = ref.refresh(dailyPricesProvider);
                   },
                 ),
               ],

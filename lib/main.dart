@@ -14,7 +14,7 @@ import 'package:cardamom_analytics/src/ui/analytics_screen.dart';
 import 'package:cardamom_analytics/src/ui/historical_data_screen.dart';
 import 'package:cardamom_analytics/src/ui/live_pulse_screen.dart';
 import 'package:cardamom_analytics/src/providers/navigation_provider.dart';
-import 'package:cardamom_analytics/src/services/data_seeder_service.dart';
+// import 'package:cardamom_analytics/src/services/data_seeder_service.dart';
 
 import 'package:intl/date_symbol_data_local.dart';
 
